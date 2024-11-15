@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Scoring App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Cricket Match Scoreboard</h1>
+
+    <div class="teams">
+        <h2>Team A</h2>
+        <ul>
+            {% for player in teams['Team A']['players'] %}
+                <li>{{ player }} - 
+                    {% for score in teams['Team A']['scores'] %}
+                        {% if score['player'] == player %}
+                            {{ score['runs'] }} runs
+                        {% endif %}
+                    {% endfor %}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="teams">
+        <h2>Team B</h2>
+        <ul>
+            {% for player in teams['Team B']['players'] %}
+                <li>{{ player }} - 
+                    {% for score in teams['Team B']['scores'] %}
+                        {% if score['player'] == player %}
+                            {{ score['runs'] }} runs
+                        {% endif %}
+                    {% endfor %}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <h3>Enter Score</h3>
+    <form method="POST" action="/score">
+        <label for="team">Team:</label>
+        <select name="team" id="team">
+            <option value="Team A">Team A</option>
+            <option value="Team B">Team B</option>
+        </select>
+
+        <label for="player">Player:</label>
+        <select name="player" id="player">
+            <option value="Player 1">Player 1</option>
+            <option value="Player 2">Player 2</option>
+            <option value="Player 3">Player 3</option>
+            <option value="Player 4">Player 4</option>
+            <option value="Player 5">Player 5</option>
+            <option value="Player 6">Player 6</option>
+        </select>
+
+        <label for="runs">Runs (0, 4, or 6):</label>
+        <input type="number" name="runs" id="runs" min="0" max="6" required>
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <h3>Simulate Match</h3>
+    <form method="POST" action="/simulate">
+        <button type="submit">Simulate Match</button>
+    </form>
+</body>
+</html>
