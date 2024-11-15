@@ -1,8 +1,14 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
+name: Build and deploy Python app to Azure Web App - cic-agasthya
 name: Install Dependencies
 
 on:
   push:
     branches:
+      - main
+  workflow_dispatch:
       - main  # Trigger on pushes to the main branch
 
 jobs:
@@ -10,14 +16,64 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
       # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Set up Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       # Step 2: List files in the repository to check if requirements.txt exists
       - name: List files
         run: ls -la
 
+      - name: Create and start virtual environment
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+      
       # Step 3: Install dependencies
       - name: Install dependencies
         run: pip install -r requirements.txt
+        
+      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
+      - name: Zip artifact for deployment
+        run: zip release.zip ./* -r
+      - name: Upload artifact for deployment jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-app
+          path: |
+            release.zip
+            !venv/
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: 'Production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    permissions:
+      id-token: write #This is required for requesting the JWT
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: python-app
+      - name: Unzip artifact for deployment
+        run: unzip release.zip
+      
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_BA9AB7933C9142A7BC06516FA8A3BE4F }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_061C75D953634DF2965077D244EC759C }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_363EB4E8D3454E72B0824C91E61140D7 }}
+      - name: 'Deploy to Azure Web App'
+        uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
+        with:
+          app-name: 'cic-agasthya'
+          slot-name: 'Production'
+          
