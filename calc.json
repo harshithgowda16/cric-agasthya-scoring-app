@@ -1,130 +1,128 @@
-﻿{
+{
   "swagger": "2.0",
   "info": {
-    "title": "Calculator",
-    "description": "Arithemtics over HTTP!",
-    "version": "1.0"
+    "title": "Calculator API",
+    "description": "A simple calculator API",
+    "version": "1.0.0"
   },
-  "host": "calcapi.cloudapp.net",
-  "basePath": "/api",
-  "schemes": [
-    "http"
-  ],
+  "host": "calculator.com",
+  "basePath": "/",
+  "schemes": ["http"],
   "paths": {
-    "/add?a={a}&b={b}": {
+    "/add": {
       "get": {
-        "description": "Responds with a sum of two numbers.",
-        "operationId": "Add two integers",
+        "summary": "Add two numbers",
         "parameters": [
           {
             "name": "a",
             "in": "query",
-            "description": "First operand. Default value is <code>51</code>.",
+            "description": "First number",
             "required": true,
-            "default": "51",
-            "enum": [
-              "51"
-            ]
+            "type": "number"
           },
           {
             "name": "b",
             "in": "query",
-            "description": "Second operand. Default value is <code>49</code>.",
+            "description": "Second number",
             "required": true,
-            "default": "49",
-            "enum": [
-              "49"
-            ]
+            "type": "number"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Successful addition",
+            "schema": {
+              "type": "number"
+            }
+          }
+        }
       }
     },
-    "/sub?a={a}&b={b}": {
+    "/sub": {
       "get": {
-        "description": "Responds with a difference between two numbers.",
-        "operationId": "Subtract two integers",
+        "summary": "Subtract two numbers",
         "parameters": [
           {
             "name": "a",
             "in": "query",
-            "description": "First operand. Default value is <code>100</code>.",
+            "description": "First number",
             "required": true,
-            "default": "100",
-            "enum": [
-              "100"
-            ]
+            "type": "number"
           },
           {
             "name": "b",
             "in": "query",
-            "description": "Second operand. Default value is <code>50</code>.",
+            "description": "Second number",
             "required": true,
-            "default": "50",
-            "enum": [
-              "50"
-            ]
+            "type": "number"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Successful subtraction",
+            "schema": {
+              "type": "number"
+            }
+          }
+        }
       }
     },
-    "/div?a={a}&b={b}": {
+    "/div": {
       "get": {
-        "description": "Responds with a quotient of two numbers.",
-        "operationId": "Divide two integers",
+        "summary": "Divide two numbers",
         "parameters": [
           {
             "name": "a",
             "in": "query",
-            "description": "First operand. Default value is <code>100</code>.",
+            "description": "First number",
             "required": true,
-            "default": "100",
-            "enum": [
-              "100"
-            ]
+            "type": "number"
           },
           {
             "name": "b",
             "in": "query",
-            "description": "Second operand. Default value is <code>20</code>.",
+            "description": "Second number",
             "required": true,
-            "default": "20",
-            "enum": [
-              "20"
-            ]
+            "type": "number"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Successful division",
+            "schema": {
+              "type": "number"
+            }
+          }
+        }
       }
     },
-    "/mul?a={a}&b={b}": {
+    "/mul": {
       "get": {
-        "description": "Responds with a product of two numbers.",
-        "operationId": "Multiply two integers",
+        "summary": "Multiply two numbers",
         "parameters": [
           {
             "name": "a",
             "in": "query",
-            "description": "First operand. Default value is <code>20</code>.",
+            "description": "First number",
             "required": true,
-            "default": "20",
-            "enum": [
-              "20"
-            ]
+            "type": "number"
           },
           {
             "name": "b",
             "in": "query",
-            "description": "Second operand. Default value is <code>5</code>.",
+            "description": "Second number",
             "required": true,
-            "default": "5",
-            "enum": [
-              "5"
-            ]
+            "type": "number"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Successful multiplication",
+            "schema": {
+              "type": "number"
+            }
+          }
+        }
       }
     }
   }
