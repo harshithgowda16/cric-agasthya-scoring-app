@@ -1,121 +1,130 @@
-{
-  "openapi": "3.0.1",
+﻿{
+  "swagger": "2.0",
   "info": {
-    "title": "Basic Calculator API",
-    "version": "1.0.0",
-    "description": "A simple calculator API for add, subtract, multiply, divide"
+    "title": "Calculator",
+    "description": "Arithemtics over HTTP!",
+    "version": "1.0"
   },
-  "servers": [
-    {
-      "url": "http://httpbin.org", 
-      "description": "Placeholder HTTP server"
-    }
+  "host": "calcapi.cloudapp.net",
+  "basePath": "/api",
+  "schemes": [
+    "http"
   ],
   "paths": {
-    "/add": {
+    "/add?a={a}&b={b}": {
       "get": {
-        "summary": "Add two numbers",
+        "description": "Responds with a sum of two numbers.",
+        "operationId": "Add two integers",
         "parameters": [
           {
-            "name": "x",
+            "name": "a",
             "in": "query",
-            "schema": { "type": "number" },
-            "required": true
+            "description": "First operand. Default value is <code>51</code>.",
+            "required": true,
+            "default": "51",
+            "enum": [
+              "51"
+            ]
           },
           {
-            "name": "y",
+            "name": "b",
             "in": "query",
-            "schema": { "type": "number" },
-            "required": true
+            "description": "Second operand. Default value is <code>49</code>.",
+            "required": true,
+            "default": "49",
+            "enum": [
+              "49"
+            ]
           }
         ],
-        "responses": {
-          "200": {
-            "description": "Addition result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": { "type": "number" }
-                  }
-                }
-              }
-            }
-          }
-        }
+        "responses": {}
       }
     },
-    "/subtract": {
+    "/sub?a={a}&b={b}": {
       "get": {
-        "summary": "Subtract two numbers",
+        "description": "Responds with a difference between two numbers.",
+        "operationId": "Subtract two integers",
         "parameters": [
-          { "name": "x", "in": "query", "schema": { "type": "number" }, "required": true },
-          { "name": "y", "in": "query", "schema": { "type": "number" }, "required": true }
-        ],
-        "responses": {
-          "200": {
-            "description": "Subtraction result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": { "type": "number" }
-                  }
-                }
-              }
-            }
+          {
+            "name": "a",
+            "in": "query",
+            "description": "First operand. Default value is <code>100</code>.",
+            "required": true,
+            "default": "100",
+            "enum": [
+              "100"
+            ]
+          },
+          {
+            "name": "b",
+            "in": "query",
+            "description": "Second operand. Default value is <code>50</code>.",
+            "required": true,
+            "default": "50",
+            "enum": [
+              "50"
+            ]
           }
-        }
+        ],
+        "responses": {}
       }
     },
-    "/multiply": {
+    "/div?a={a}&b={b}": {
       "get": {
-        "summary": "Multiply two numbers",
+        "description": "Responds with a quotient of two numbers.",
+        "operationId": "Divide two integers",
         "parameters": [
-          { "name": "x", "in": "query", "schema": { "type": "number" }, "required": true },
-          { "name": "y", "in": "query", "schema": { "type": "number" }, "required": true }
-        ],
-        "responses": {
-          "200": {
-            "description": "Multiplication result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": { "type": "number" }
-                  }
-                }
-              }
-            }
+          {
+            "name": "a",
+            "in": "query",
+            "description": "First operand. Default value is <code>100</code>.",
+            "required": true,
+            "default": "100",
+            "enum": [
+              "100"
+            ]
+          },
+          {
+            "name": "b",
+            "in": "query",
+            "description": "Second operand. Default value is <code>20</code>.",
+            "required": true,
+            "default": "20",
+            "enum": [
+              "20"
+            ]
           }
-        }
+        ],
+        "responses": {}
       }
     },
-    "/divide": {
+    "/mul?a={a}&b={b}": {
       "get": {
-        "summary": "Divide two numbers",
+        "description": "Responds with a product of two numbers.",
+        "operationId": "Multiply two integers",
         "parameters": [
-          { "name": "x", "in": "query", "schema": { "type": "number" }, "required": true },
-          { "name": "y", "in": "query", "schema": { "type": "number" }, "required": true }
-        ],
-        "responses": {
-          "200": {
-            "description": "Division result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": { "type": "number" }
-                  }
-                }
-              }
-            }
+          {
+            "name": "a",
+            "in": "query",
+            "description": "First operand. Default value is <code>20</code>.",
+            "required": true,
+            "default": "20",
+            "enum": [
+              "20"
+            ]
+          },
+          {
+            "name": "b",
+            "in": "query",
+            "description": "Second operand. Default value is <code>5</code>.",
+            "required": true,
+            "default": "5",
+            "enum": [
+              "5"
+            ]
           }
-        }
+        ],
+        "responses": {}
       }
     }
   }
