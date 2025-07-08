@@ -1,126 +1,128 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "Calculator API",
-    "description": "A simple calculator API",
-    "version": "1.0.0"
+    "title": "Calculator",
+    "description": "Arithmetic operations over HTTP!",
+    "version": "1.0"
   },
-  "host": "calculator.com",
-  "basePath": "/",
-  "schemes": ["http"],
+  "host": "cloudlabdummy.net",
+  "basePath": "/api",
+  "schemes": [
+    "http"
+  ],
   "paths": {
     "/add": {
       "get": {
-        "summary": "Add two numbers",
+        "description": "Responds with the sum of two numbers.",
+        "operationId": "AddTwoIntegers",
         "parameters": [
           {
             "name": "a",
             "in": "query",
-            "description": "First number",
+            "description": "First operand.",
             "required": true,
-            "type": "number"
+            "type": "integer",
+            "default": 51
           },
           {
             "name": "b",
             "in": "query",
-            "description": "Second number",
+            "description": "Second operand.",
             "required": true,
-            "type": "number"
+            "type": "integer",
+            "default": 49
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful addition",
-            "schema": {
-              "type": "number"
-            }
+            "description": "Sum computed successfully."
           }
         }
       }
     },
     "/sub": {
       "get": {
-        "summary": "Subtract two numbers",
+        "description": "Responds with the difference between two numbers.",
+        "operationId": "SubtractTwoIntegers",
         "parameters": [
           {
             "name": "a",
             "in": "query",
-            "description": "First number",
+            "description": "First operand.",
             "required": true,
-            "type": "number"
+            "type": "integer",
+            "default": 100
           },
           {
             "name": "b",
             "in": "query",
-            "description": "Second number",
+            "description": "Second operand.",
             "required": true,
-            "type": "number"
+            "type": "integer",
+            "default": 50
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful subtraction",
-            "schema": {
-              "type": "number"
-            }
+            "description": "Difference computed successfully."
           }
         }
       }
     },
     "/div": {
       "get": {
-        "summary": "Divide two numbers",
+        "description": "Responds with the quotient of two numbers.",
+        "operationId": "DivideTwoIntegers",
         "parameters": [
           {
             "name": "a",
             "in": "query",
-            "description": "First number",
+            "description": "Dividend.",
             "required": true,
-            "type": "number"
+            "type": "integer",
+            "default": 100
           },
           {
             "name": "b",
             "in": "query",
-            "description": "Second number",
+            "description": "Divisor.",
             "required": true,
-            "type": "number"
+            "type": "integer",
+            "default": 20
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful division",
-            "schema": {
-              "type": "number"
-            }
+            "description": "Quotient computed successfully."
           }
         }
       }
     },
     "/mul": {
       "get": {
-        "summary": "Multiply two numbers",
+        "description": "Responds with the product of two numbers.",
+        "operationId": "MultiplyTwoIntegers",
         "parameters": [
           {
             "name": "a",
             "in": "query",
-            "description": "First number",
+            "description": "First operand.",
             "required": true,
-            "type": "number"
+            "type": "integer",
+            "default": 20
           },
           {
             "name": "b",
             "in": "query",
-            "description": "Second number",
+            "description": "Second operand.",
             "required": true,
-            "type": "number"
+            "type": "integer",
+            "default": 5
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful multiplication",
-            "schema": {
-              "type": "number"
-            }
+            "description": "Product computed successfully."
           }
         }
       }
