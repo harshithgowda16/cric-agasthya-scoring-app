@@ -252,7 +252,7 @@
     "resources": [
         {
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2016-09-01",
+            "apiVersion": "2021-04-01",
             "name": "pid-e843308b-3ce2-42a2-b743-2f21b36a5e68",
             "tags": {
                 "ODL-UNIQUENAME": "[parameters('ODLname')]"
