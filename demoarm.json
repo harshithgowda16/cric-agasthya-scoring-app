@@ -1,0 +1,175 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "DID": { "type": "string" },
+    "Lab-VM-AdminUsername": { "type": "string" },
+    "Lab-VM-AdminPassword": { "type": "securestring" }
+  },
+  "variables": {
+    "location": "[resourceGroup().location]",
+    "virtualNetworkName": "Labvm-vNet",
+    "virtualMachineName": "[concat('Lab-VM-', parameters('DID'))]",
+    "subnetName": "default",
+    "networkSecurityGroupName": "[concat(variables('virtualMachineName'), '-nsg')]",
+    "virtualMachineSize": "Standard_D8s_v5",
+    "networkInterfaceName": "[concat(variables('virtualMachineName'), '-nic')]",
+    "publicIpAddressName": "[concat(variables('virtualMachineName'), '-pip')]",
+    "publicIpAddressDNSName": "[concat('labvm-', parameters('DID'))]",
+    "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]"
+  },
+  "resources": [
+
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('networkSecurityGroupName')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "Allow-RDP",
+            "properties": {
+              "priority": 1000,
+              "protocol": "Tcp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "3389"
+            }
+          }
+        ]
+      }
+    },
+
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('virtualNetworkName')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "addressSpace": { "addressPrefixes": ["10.0.0.0/16"] },
+        "subnets": [
+          {
+            "name": "[variables('subnetName')]",
+            "properties": { "addressPrefix": "10.0.2.0/24" }
+          }
+        ]
+      }
+    },
+
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('publicIpAddressName')]",
+      "location": "[variables('location')]",
+      "sku": { "name": "Standard" },
+      "properties": {
+        "publicIPAllocationMethod": "Static",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('publicIpAddressDNSName')]"
+        }
+      }
+    },
+
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('networkInterfaceName')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": { "id": "[variables('subnetRef')]" },
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+        }
+      }
+    },
+
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('virtualMachineName')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('virtualMachineSize')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2022-datacenter",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "diskSizeGB": 128
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "computerName": "[variables('virtualMachineName')]",
+          "adminUsername": "[parameters('Lab-VM-AdminUsername')]",
+          "adminPassword": "[parameters('Lab-VM-AdminPassword')]"
+        }
+      }
+    },
+
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2023-09-01",
+      "name": "[concat(variables('virtualMachineName'), '/DevToolsSetup')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', variables('virtualMachineName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.10",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Bypass -Command \"Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); choco feature enable -n allowGlobalConfirmation; choco install vscode git googlechrome firefox nodejs-lts python openjdk docker-desktop kubernetes-cli minikube postman intellijidea-community microsoft-windows-terminal mysql postgresql mongodb dbeaver slack notion obsidian keepassxc -y; Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux -NoRestart; Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform -NoRestart; wsl --set-default-version 2; Restart-Computer -Force\""
+        }
+      }
+    }
+
+  ],
+
+  "outputs": {
+    "Lab-VM-DNS": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))).dnsSettings.fqdn]"
+    },
+    "AdminUsername": {
+      "type": "string",
+      "value": "[parameters('Lab-VM-AdminUsername')]"
+    }
+  }
+}
