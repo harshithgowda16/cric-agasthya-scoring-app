@@ -50,11 +50,15 @@
       "name": "[variables('virtualNetworkName')]",
       "location": "[variables('location')]",
       "properties": {
-        "addressSpace": { "addressPrefixes": ["10.0.0.0/16"] },
+        "addressSpace": {
+          "addressPrefixes": ["10.0.0.0/16"]
+        },
         "subnets": [
           {
             "name": "[variables('subnetName')]",
-            "properties": { "addressPrefix": "10.0.2.0/24" }
+            "properties": {
+              "addressPrefix": "10.0.2.0/24"
+            }
           }
         ]
       }
@@ -65,7 +69,9 @@
       "apiVersion": "2023-05-01",
       "name": "[variables('publicIpAddressName')]",
       "location": "[variables('location')]",
-      "sku": { "name": "Standard" },
+      "sku": {
+        "name": "Standard"
+      },
       "properties": {
         "publicIPAllocationMethod": "Static",
         "dnsSettings": {
@@ -89,7 +95,10 @@
           {
             "name": "ipconfig1",
             "properties": {
-              "subnet": { "id": "[variables('subnetRef')]" },
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              },
               "publicIPAddress": {
                 "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))]"
               }
@@ -123,7 +132,10 @@
           },
           "osDisk": {
             "createOption": "FromImage",
-            "diskSizeGB": 128
+            "diskSizeGB": 128,
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS"
+            }
           }
         },
         "networkProfile": {
@@ -155,7 +167,10 @@
         "typeHandlerVersion": "1.10",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "commandToExecute": "powershell -ExecutionPolicy Bypass -Command \"Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); choco feature enable -n allowGlobalConfirmation; choco install vscode git googlechrome firefox nodejs-lts python openjdk docker-desktop kubernetes-cli minikube postman intellijidea-community microsoft-windows-terminal mysql postgresql mongodb dbeaver slack notion obsidian keepassxc -y; Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux -NoRestart; Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform -NoRestart; wsl --set-default-version 2; Restart-Computer -Force\""
+          "fileUris": [
+            "https://raw.githubusercontent.com/harshithgowda16/cric-agasthya-scoring-app/refs/heads/main/DevSandboxSetup.ps1"
+          ],
+          "commandToExecute": "powershell -ExecutionPolicy Bypass -File DevSandboxSetup.ps1"
         }
       }
     }
