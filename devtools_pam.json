@@ -1,0 +1,45 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "adminUsername": {
+            "value": "azureuser"
+        },
+        "adminPassword": {
+            "value": "GEN-PASSWORD"
+        },
+        "AzureUserName": {
+            "value": "GET-AZUSER-UPN"
+        },
+        "AzurePassword": {
+            "value": "GET-AZUSER-PASSWORD"
+        },
+        "ODLID": {
+            "value": "GET-ODL-ID"
+        },
+        "DeploymentID": {
+            "value": "GET-DEPLOYMENT-ID"
+        },
+        "InstallCloudLabsShadow": {
+            "value": "yes"
+        },
+        "trainerUserName": {
+            "value": "trainer"
+        },
+        "trainerUserPassword": {
+            "value": "Password.!!1"
+        },
+        "sku": {
+            "value": "F2"
+        },
+        "AWSAccessKey": {
+            "value": "GET-SERVICEPRINCIPAL-APPLICATION-ID"
+        },
+        "AWSSecretKey": {
+            "value": "GET-SERVICEPRINCIPAL-SECRET"
+        },
+        "AWSRegion": {
+            "value": "us-east-1"
+        }
+    }
+}
