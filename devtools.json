@@ -33,6 +33,21 @@
         },
         "trainerUserPassword": {
             "type": "string"
+        },
+        "sku": {
+            "type": "string",
+            "allowedValues": [
+                "F2"
+            ]
+        },
+        "AWSAccessKey": {
+            "type": "securestring"
+        },
+        "AWSSecretKey": {
+            "type": "securestring"
+        },
+        "AWSRegion": {
+            "type": "string"
         }
     },
     "variables": {
@@ -48,11 +63,11 @@
         "subnetName": "Subnet",
         "subnetPrefix": "10.0.0.0/24",
         "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets/',variables('virtualNetworkName'), variables('subnetName'))]",
-        "virtualMachineSize": "Standard_D8s_v5",
+        "virtualMachineSize": "Standard_D4s_v5",
         "virtualNetworkName": "vNet",
         "vmName": "[concat('vm-',parameters('DeploymentID'))]",
         "location": "[resourceGroup().location]",
-        "galleryImageVersionId": "/subscriptions/49ed63f7-4523-4c84-b57b-212b550fae61/resourceGroups/Cloudlabs-mgmt-images/providers/Microsoft.Compute/galleries/CBRE_Dev_lab/images/devtools_vm_imagedef"
+        "fabriccapacityname": "[concat('capacity',parameters('DeploymentID'))]"
     },
     "resources": [
         {
@@ -90,7 +105,7 @@
         },
         {
             "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "2017-03-30",
+            "apiVersion": "2022-11-01",
             "name": "[variables('vmName')]",
             "location": "[variables('location')]",
             "dependsOn": [
@@ -109,8 +124,8 @@
                     "vmSize": "[variables('virtualMachineSize')]"
                 },
                 "storageProfile": {
-                    "imageReference": {
-                        "id": "[variables('galleryImageVersionId')]"
+                "imageReference": {
+                        "id": "/subscriptions/bc223ea7-073c-45ba-9197-25e65cbe48da/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/CbreComputeGal/images/DataEngineeringWindowsVM/versions/0.0.3"
                     },
                     "osDisk": {
                         "createOption": "fromImage",
@@ -172,12 +187,12 @@
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "https://cbredevstorageact.blob.core.windows.net/templates/sandboxvm/psscript.ps1",
+                        "https://storageaccountforscipts.blob.core.windows.net/cbre/psscript.ps1",
                         "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File sandboxvm/psscript.ps1', variables('cloudlabsCommon'),variables('Enable-CloudLabsEmbeddedShadow'))]"
+                    "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'), ' -AWSAccessKey ', parameters('AWSAccessKey'), ' -AWSSecretKey ', parameters('AWSSecretKey'), ' -AWSRegion ', parameters('AWSRegion'))]"
                 }
             }
         },
@@ -210,6 +225,39 @@
                     "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
                 }
             }
+        },
+        {
+            "type": "Microsoft.Resources/deploymentScripts",
+            "apiVersion": "2020-10-01",
+            "kind": "AzurePowerShell",
+            "name": "WaitSection",
+            "location": "[variables('location')]",
+            "properties": {
+                "azPowerShellVersion": "9.7",
+                "scriptContent": "start-sleep -Seconds 300",
+                "cleanupPreference": "Always",
+                "retentionInterval": "PT1H"
+            }
+        },
+        {
+            "apiVersion": "2022-07-01-preview",
+            "type": "Microsoft.Fabric/capacities",
+            "name": "[variables('fabriccapacityname')]",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/deploymentScripts', 'WaitSection')]"
+            ],
+            "sku": {
+                "name": "[parameters('sku')]",
+                "tier": "Fabric"
+            },
+            "properties": {
+                "administration": {
+                    "members": [
+                        "[parameters('AzureUserName')]"
+                    ]
+                }
+            }
         }
     ],
     "outputs": {
@@ -223,7 +271,7 @@
         },
         "VM Admin Password": {
             "type": "String",
-            "value": "[parameters('adminPassword')]"
+            "value": "ooke70DZN*cG"
         },
         "VM DNS Name": {
             "type": "String",
