@@ -1,0 +1,18 @@
+{
+    "$schema": "",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "CloudLabsDeploymentID": {
+            "value": "GET-DEPLOYMENT-ID"
+        },
+        "AccountId": {
+            "value": "GET-TENANT-FQDN"
+        },
+        "userName": {
+            "value": "GET-AZUSER-UPN"
+        },
+        "password": {
+            "value": "GET-AZUSER-PASSWORD"
+        }
+    }
+}
