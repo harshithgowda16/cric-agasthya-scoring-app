@@ -1,0 +1,110 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This template is just a dummy template with no resources getting deployed. The primary purpose of this template is to fetch some output parameters in lab guide.",
+    "Parameters": {
+        "CloudLabsDeploymentID": {
+            "Description": "DeploymentID Value",
+            "Type": "String"
+        },
+        "AccountId": {
+            "Type": "String"
+        },
+        "userName": {
+            "Type": "String"
+        },
+        "password": {
+            "Type": "String"
+        }
+    },
+    "Conditions": {
+        "Never": {
+            "Fn::Equals": [
+                "a",
+                "b"
+            ]
+        }
+    },
+    "Resources": {
+        "NullResource": {
+            "Type": "Custom::Null",
+            "Condition": "Never"
+        }
+    },
+    "Outputs": {
+        "CloudLabsDeploymentID": {
+            "Description": "DeploymentID Value",
+            "Value": {
+                "Ref": "CloudLabsDeploymentID"
+            }
+        },
+        "SignInUrl": {
+            "Description": "Sign in URL",
+            "Value": {
+                "Fn::Join": [
+                    "",
+                    [
+                        "https://",
+                        {
+                            "Ref": "AccountId"
+                        },
+                        ".signin.aws.amazon.com/console/"
+                    ]
+                ]
+            }
+        },
+        "UserName": {
+            "Description": "username",
+            "Value": {
+                "Ref": "userName"
+            }
+        },
+        "Password": {
+            "Description": "password",
+            "Value": {
+                "Ref": "password"
+            }
+        },
+        "EC2InstanceName": {
+            "Description": "EC2 Name",
+            "Value": {
+                "Fn::Join": [
+                    "",
+                    [
+                        "odl-user-",
+                        {
+                            "Ref": "CloudLabsDeploymentID"
+                        }
+                    ]
+                ]
+            }
+        },
+        "S3BucketName": {
+            "Description": "S3 Bucket Name",
+            "Value": {
+                "Fn::Join": [
+                    "",
+                    [
+                        "odl-user-",
+                        {
+                            "Ref": "CloudLabsDeploymentID"
+                        }
+                    ]
+                ]
+            }
+        },
+        "KeyName": {
+            "Description": "Key Name",
+            "Value": {
+                "Fn::Join": [
+                    "",
+                    [
+                        "odl-user-",
+                        {
+                            "Ref": "CloudLabsDeploymentID"
+                        }
+                    ]
+                ]
+            }
+        }
+    }
+}
