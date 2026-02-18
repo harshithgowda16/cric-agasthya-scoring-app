@@ -1,0 +1,13 @@
+# AWS Credentials File
+# This file contains AWS credentials for the lab
+
+# AWS Account Details
+AWSAccountId=AWSAccountIdValue
+AWSRegion=AWSRegionValue
+
+# AWS IAM User Credentials
+AWSAccessKey=AWSAccessKeyValue
+AWSSecretKey=AWSSecretKeyValue
+
+# Deployment Info
+DeploymentID=DeploymentIDValue
