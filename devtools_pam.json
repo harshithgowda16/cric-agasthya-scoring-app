@@ -29,9 +29,6 @@
         "trainerUserPassword": {
             "value": "Password.!!1"
         },
-        "sku": {
-            "value": "F2"
-        },
         "AWSAccessKey": {
             "value": "GET-SERVICEPRINCIPAL-APPLICATION-ID"
         },
