@@ -52,7 +52,7 @@
         "virtualNetworkName": "vNet",
         "vmName": "[concat('vm-',parameters('DeploymentID'))]",
         "location": "[resourceGroup().location]",
-        "galleryImageVersionId": "/subscriptions/49ed63f7-4523-4c84-b57b-212b550fae61/resourceGroups/Cloudlabs-mgmt-images/providers/Microsoft.Compute/galleries/CBRE_Dev_lab/images/devtools_vm_imagedef/versions/latest"
+        "galleryImageVersionId": "/subscriptions/49ed63f7-4523-4c84-b57b-212b550fae61/resourceGroups/Cloudlabs-mgmt-images/providers/Microsoft.Compute/galleries/CBRE_Dev_lab/images/devtools_vm_imagedef"
     },
     "resources": [
         {
