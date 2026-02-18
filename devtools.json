@@ -34,12 +34,6 @@
         "trainerUserPassword": {
             "type": "string"
         },
-        "sku": {
-            "type": "string",
-            "allowedValues": [
-                "F2"
-            ]
-        },
         "AWSAccessKey": {
             "type": "securestring"
         },
@@ -70,7 +64,7 @@
         "virtualNetworkName": "vNet",
         "vmName": "[concat('vm-',parameters('DeploymentID'))]",
         "location": "[resourceGroup().location]",
-        "fabriccapacityname": "[concat('capacity',parameters('DeploymentID'))]"
+        "vmDnsName": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpAddressName'))).dnsSettings.fqdn]"
     },
     "resources": [
         {
@@ -108,7 +102,7 @@
         },
         {
             "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "2022-11-01",
+            "apiVersion": "2017-03-30",
             "name": "[variables('vmName')]",
             "location": "[variables('location')]",
             "dependsOn": [
@@ -128,7 +122,10 @@
                 },
                 "storageProfile": {
                     "imageReference": {
-                        "id": "/subscriptions/bc223ea7-073c-45ba-9197-25e65cbe48da/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/CbreComputeGal/images/DataEngineeringWindowsVM/versions/0.0.3"
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2022-Datacenter",
+                        "version": "latest"
                     },
                     "osDisk": {
                         "createOption": "fromImage",
@@ -181,7 +178,8 @@
                 "displayName": "VM Extension"
             },
             "dependsOn": [
-                "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
+                "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'))]",
+                "[resourceId('Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]"
             ],
             "properties": {
                 "publisher": "Microsoft.Compute",
@@ -190,11 +188,12 @@
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "https://raw.githubusercontent.com/harshithgowda16/cric-agasthya-scoring-app/refs/heads/main/psscript.ps1"
+                        "https://raw.githubusercontent.com/harshithgowda16/cric-agasthya-scoring-app/refs/heads/main/psscript.ps1",
+                        "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'), ' -AWSAccessKey ', parameters('AWSAccessKey'), ' -AWSSecretKey ', parameters('AWSSecretKey'), ' -AWSRegion ', parameters('AWSRegion'), ' -AWSAccountId ', parameters('AWSAccountId'), ' -VMAdminUsername ', parameters('adminUsername'), ' -VMAdminPassword ', parameters('adminPassword'), ' -VMDNSName ', reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))).dnsSettings.fqdn)]"
+                    "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'), ' -AWSAccessKey ', parameters('AWSAccessKey'), ' -AWSSecretKey ', parameters('AWSSecretKey'), ' -AWSRegion ', parameters('AWSRegion'), ' -AWSAccountId ', parameters('AWSAccountId'), ' -VMAdminUsername ', parameters('adminUsername'), ' -VMAdminPassword ', parameters('adminPassword'), ' -VMDNSName ', variables('vmDnsName'))]"
                 }
             }
         },
@@ -227,39 +226,6 @@
                     "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
                 }
             }
-        },
-        {
-            "type": "Microsoft.Resources/deploymentScripts",
-            "apiVersion": "2020-10-01",
-            "kind": "AzurePowerShell",
-            "name": "WaitSection",
-            "location": "[variables('location')]",
-            "properties": {
-                "azPowerShellVersion": "9.7",
-                "scriptContent": "start-sleep -Seconds 300",
-                "cleanupPreference": "Always",
-                "retentionInterval": "PT1H"
-            }
-        },
-        {
-            "apiVersion": "2022-07-01-preview",
-            "type": "Microsoft.Fabric/capacities",
-            "name": "[variables('fabriccapacityname')]",
-            "location": "[variables('location')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Resources/deploymentScripts', 'WaitSection')]"
-            ],
-            "sku": {
-                "name": "[parameters('sku')]",
-                "tier": "Fabric"
-            },
-            "properties": {
-                "administration": {
-                    "members": [
-                        "[parameters('AzureUserName')]"
-                    ]
-                }
-            }
         }
     ],
     "outputs": {
@@ -273,7 +239,7 @@
         },
         "VM Admin Password": {
             "type": "String",
-            "value": "ooke70DZN*cG"
+            "value": "[parameters('adminPassword')]"
         },
         "VM DNS Name": {
             "type": "String",
