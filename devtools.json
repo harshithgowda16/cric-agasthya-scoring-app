@@ -33,31 +33,6 @@
         },
         "trainerUserPassword": {
             "type": "string"
-        },
-        "AWSAccessKey": {
-            "type": "securestring",
-            "metadata": {
-                "description": "AWS Access Key ID for multi-cloud access"
-            }
-        },
-        "AWSSecretKey": {
-            "type": "securestring",
-            "metadata": {
-                "description": "AWS Secret Access Key for multi-cloud access"
-            }
-        },
-        "AWSRegion": {
-            "type": "string",
-            "defaultValue": "us-east-1",
-            "metadata": {
-                "description": "AWS default region"
-            }
-        },
-        "AWSAccountId": {
-            "type": "string",
-            "metadata": {
-                "description": "AWS Account ID"
-            }
         }
     },
     "variables": {
@@ -76,8 +51,8 @@
         "virtualMachineSize": "Standard_D4s_v5",
         "virtualNetworkName": "vNet",
         "vmName": "[concat('vm-',parameters('DeploymentID'))]",
-        "location": "[resourceGroup().location]"
-        // Removed the problematic vmDnsName variable
+        "location": "[resourceGroup().location]",
+        "customImageResourceId": "/subscriptions/49ed63f7-4523-4c84-b57b-212b550fae61/resourceGroups/Cloudlabs-mgmt-images/providers/Microsoft.Compute/galleries/CBRE_gallery/images/dev_tool_lab"
     },
     "resources": [
         {
@@ -135,10 +110,7 @@
                 },
                 "storageProfile": {
                     "imageReference": {
-                        "publisher": "MicrosoftWindowsServer",
-                        "offer": "WindowsServer",
-                        "sku": "2022-Datacenter",
-                        "version": "latest"
+                        "id": "[variables('customImageResourceId')]"
                     },
                     "osDisk": {
                         "createOption": "fromImage",
@@ -191,8 +163,7 @@
                 "displayName": "VM Extension"
             },
             "dependsOn": [
-                "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'))]",
-                "[resourceId('Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]"
+                "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
             ],
             "properties": {
                 "publisher": "Microsoft.Compute",
@@ -201,12 +172,12 @@
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "https://raw.githubusercontent.com/harshithgowda16/cric-agasthya-scoring-app/refs/heads/main/psscript.ps1",
+                        "https://cbredevstorageact.blob.core.windows.net/templates/sandboxvm/psscript.ps1",
                         "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'), ' -AWSAccessKey ', parameters('AWSAccessKey'), ' -AWSSecretKey ', parameters('AWSSecretKey'), ' -AWSRegion ', parameters('AWSRegion'), ' -AWSAccountId ', parameters('AWSAccountId'), ' -VMAdminUsername ', parameters('adminUsername'), ' -VMAdminPassword ', parameters('adminPassword'), ' -VMDNSName ', reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))).dnsSettings.fqdn)]"
+                    "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File sandboxvm/psscript.ps1', variables('cloudlabsCommon'),variables('Enable-CloudLabsEmbeddedShadow'))]"
                 }
             }
         },
