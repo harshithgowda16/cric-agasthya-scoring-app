@@ -35,16 +35,29 @@
             "type": "string"
         },
         "AWSAccessKey": {
-            "type": "securestring"
+            "type": "securestring",
+            "metadata": {
+                "description": "AWS Access Key ID for multi-cloud access"
+            }
         },
         "AWSSecretKey": {
-            "type": "securestring"
+            "type": "securestring",
+            "metadata": {
+                "description": "AWS Secret Access Key for multi-cloud access"
+            }
         },
         "AWSRegion": {
-            "type": "string"
+            "type": "string",
+            "defaultValue": "us-east-1",
+            "metadata": {
+                "description": "AWS default region"
+            }
         },
         "AWSAccountId": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "AWS Account ID"
+            }
         }
     },
     "variables": {
@@ -63,8 +76,8 @@
         "virtualMachineSize": "Standard_D4s_v5",
         "virtualNetworkName": "vNet",
         "vmName": "[concat('vm-',parameters('DeploymentID'))]",
-        "location": "[resourceGroup().location]",
-        "vmDnsName": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpAddressName'))).dnsSettings.fqdn]"
+        "location": "[resourceGroup().location]"
+        // Removed the problematic vmDnsName variable
     },
     "resources": [
         {
@@ -193,7 +206,7 @@
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'), ' -AWSAccessKey ', parameters('AWSAccessKey'), ' -AWSSecretKey ', parameters('AWSSecretKey'), ' -AWSRegion ', parameters('AWSRegion'), ' -AWSAccountId ', parameters('AWSAccountId'), ' -VMAdminUsername ', parameters('adminUsername'), ' -VMAdminPassword ', parameters('adminPassword'), ' -VMDNSName ', variables('vmDnsName'))]"
+                    "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'), ' -AWSAccessKey ', parameters('AWSAccessKey'), ' -AWSSecretKey ', parameters('AWSSecretKey'), ' -AWSRegion ', parameters('AWSRegion'), ' -AWSAccountId ', parameters('AWSAccountId'), ' -VMAdminUsername ', parameters('adminUsername'), ' -VMAdminPassword ', parameters('adminPassword'), ' -VMDNSName ', reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))).dnsSettings.fqdn)]"
                 }
             }
         },
