@@ -43,14 +43,14 @@ New-Item -ItemType directory -Path C:\ProgramData\CloudLabs -Force | Out-Null
 
 # Download the template credential file from GitHub
 $WebClient = New-Object System.Net.WebClient
-$credsTemplateUrl = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/CloudLabs-Creds.txt"
+$credsTemplateUrl = "https://raw.githubusercontent.com/harshithgowda16/cric-agasthya-scoring-app/refs/heads/main/CloudLabs-Creds.txt"
 $credsFile = "C:\ProgramData\CloudLabs\CloudLabs-Creds.txt"
 
 try {
     $WebClient.DownloadFile($credsTemplateUrl, $credsFile)
-    Write-Host "Downloaded credential template" -ForegroundColor Green
+    Write-Host "✅ Downloaded credential template from GitHub" -ForegroundColor Green
 } catch {
-    Write-Host "Failed to download template, creating from scratch..." -ForegroundColor Yellow
+    Write-Host "⚠️ Failed to download template, creating from scratch..." -ForegroundColor Yellow
     # Create basic template if download fails
     @"
 ================================================================
@@ -93,6 +93,7 @@ Deployment ID: __DEPLOYMENT_ID__
 $currentDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
 # Replace placeholders with actual values
+Write-Host "📝 Populating credentials file with values..." -ForegroundColor Yellow
 (Get-Content -Path $credsFile) | ForEach-Object {
     $_ -replace "__DATE__", "$currentDate" `
        -replace "__DEPLOYMENT_ID__", "$ODLID" `
@@ -115,20 +116,23 @@ Write-Host "✅ Credential file created at: $credsFile" -ForegroundColor Green
 # Copy to LabFiles and Desktop for easy access
 Copy-Item $credsFile -Destination "C:\LabFiles\CloudLabs-Creds.txt" -Force
 Copy-Item $credsFile -Destination "C:\Users\Public\Desktop\CloudLabs-Creds.txt" -Force
+Write-Host "✅ Credential file copied to LabFiles and Desktop" -ForegroundColor Green
 
 # ========== DOWNLOAD AND CREATE LOGIN SCRIPT ==========
-$loginScriptUrl = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/CloudLabs-Login.ps1"
+$loginScriptUrl = "https://raw.githubusercontent.com/harshithgowda16/cric-agasthya-scoring-app/refs/heads/main/CloudLabs-Login.ps1"
 $loginScriptPath = "C:\ProgramData\CloudLabs\CloudLabs-Login.ps1"
 
 try {
     $WebClient.DownloadFile($loginScriptUrl, $loginScriptPath)
-    Write-Host "✅ Login script downloaded" -ForegroundColor Green
+    Write-Host "✅ Login script downloaded from GitHub" -ForegroundColor Green
 } catch {
-    Write-Host "Failed to download login script" -ForegroundColor Red
+    Write-Host "❌ Failed to download login script" -ForegroundColor Red
 }
 
 # Copy login script to accessible locations
 Copy-Item $loginScriptPath -Destination "C:\LabFiles\CloudLabs-Login.ps1" -Force
+Copy-Item $loginScriptPath -Destination "C:\Users\Public\Desktop\CloudLabs-Login.ps1" -Force
+Write-Host "✅ Login script copied to LabFiles and Desktop" -ForegroundColor Green
 
 # ========== CREATE DESKTOP SHORTCUTS ==========
 $WshShell = New-Object -ComObject WScript.Shell
@@ -141,6 +145,7 @@ $shortcut.Arguments = "-ExecutionPolicy Bypass -NoExit -File C:\ProgramData\Clou
 $shortcut.Description = "Login to Azure and AWS"
 $shortcut.WorkingDirectory = "C:\ProgramData\CloudLabs"
 $shortcut.Save()
+Write-Host "✅ Created 'CloudLabs Login' shortcut on Desktop" -ForegroundColor Green
 
 # View credentials shortcut
 $credsShortcut = $WshShell.CreateShortcut("$PublicDesktop\View Credentials.lnk")
@@ -148,44 +153,108 @@ $credsShortcut.TargetPath = "notepad.exe"
 $credsShortcut.Arguments = "C:\ProgramData\CloudLabs\CloudLabs-Creds.txt"
 $credsShortcut.Description = "View CloudLabs Credentials"
 $credsShortcut.Save()
+Write-Host "✅ Created 'View Credentials' shortcut on Desktop" -ForegroundColor Green
 
-Write-Host "✅ Desktop shortcuts created" -ForegroundColor Green
+# PowerShell shortcut for quick access
+$psShortcut = $WshShell.CreateShortcut("$PublicDesktop\PowerShell (Admin).lnk")
+$psShortcut.TargetPath = "powershell.exe"
+$psShortcut.Arguments = "-ExecutionPolicy Bypass"
+$psShortcut.Description = "Open PowerShell"
+$psShortcut.WorkingDirectory = "C:\ProgramData\CloudLabs"
+$psShortcut.Save()
+Write-Host "✅ Created 'PowerShell' shortcut on Desktop" -ForegroundColor Green
+
+Write-Host "✅ All desktop shortcuts created" -ForegroundColor Green
 
 # ========== CREATE README ==========
 $readme = @"
 ========================================
       CLOUDLABS ENVIRONMENT README
 ========================================
-
 Deployment ID: $ODLID
+Generated on: $currentDate
 
-📁 CREDENTIALS FILE:
-   • Location: C:\ProgramData\CloudLabs\CloudLabs-Creds.txt
-   • Desktop shortcut: "View Credentials"
+📁 IMPORTANT FILES LOCATIONS:
+   • Credentials: C:\ProgramData\CloudLabs\CloudLabs-Creds.txt
+   • Login Script: C:\ProgramData\CloudLabs\CloudLabs-Login.ps1
+   • Lab Files: C:\LabFiles\
+
+📌 DESKTOP SHORTCUTS:
+   1. "CloudLabs Login" - Automatically logs into Azure and AWS
+   2. "View Credentials" - Opens the credentials file
+   3. "PowerShell (Admin)" - Opens PowerShell for running commands
 
 🚀 TO LOGIN:
    Double-click "CloudLabs Login" on desktop
    This will automatically:
-   • Log you into Azure
+   • Log you into Azure using Service Principal
    • Configure AWS CLI with your credentials
+   • Verify both connections work
 
 📋 CREDENTIALS INCLUDED:
-   • Azure Username/Password
-   • Azure Tenant/Subscription IDs
-   • AWS Access Key/Secret
-   • AWS Account ID/Region
-   • VM Admin credentials
+   AZURE:
+   • Username: $AzureUserName
+   • Tenant ID: $AzureTenantID
+   • Subscription ID: $AzureSubscriptionID
+   
+   AWS:
+   • Account ID: $AWSAccountId
+   • Region: $AWSRegion
+   • Access Key: $($AWSAccessKey.Substring(0,5))********
+   
+   VM ACCESS:
+   • Admin Username: $VMAdminUsername
+   • DNS Name: $VMDNSName
 
 🔒 SECURITY NOTE:
-   Credentials file is only accessible by Administrators
-   You can delete it after successful login
+   • Credentials file is stored securely in C:\ProgramData
+   • Only Administrators can access this file
+   • You can delete the file after successful login:
+     Remove-Item C:\ProgramData\CloudLabs\CloudLabs-Creds.txt -Force
 
+🆘 TROUBLESHOOTING:
+   • If login fails, check the file exists: Test-Path C:\ProgramData\CloudLabs\CloudLabs-Creds.txt
+   • Run login script manually: & 'C:\ProgramData\CloudLabs\CloudLabs-Login.ps1'
+   • Check transcript: C:\WindowsAzure\Logs\CloudLabsCustomScriptExtension.txt
+
+========================================
+        READY TO START YOUR LAB!
 ========================================
 "@
 
 $readme | Out-File -FilePath "C:\Users\Public\Desktop\README.txt" -Encoding UTF8 -Force
+Write-Host "✅ README file created on Desktop" -ForegroundColor Green
 
+# ========== VERIFY SETUP ==========
+Write-Host ""
+Write-Host "=========================================" -ForegroundColor Cyan
+Write-Host "         SETUP VERIFICATION" -ForegroundColor Cyan
+Write-Host "=========================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Check if files exist
+$filesToCheck = @{
+    "Credentials File" = $credsFile
+    "Login Script" = $loginScriptPath
+    "README" = "C:\Users\Public\Desktop\README.txt"
+}
+
+foreach ($file in $filesToCheck.Keys) {
+    if (Test-Path $filesToCheck[$file]) {
+        Write-Host "✅ $file exists" -ForegroundColor Green
+    } else {
+        Write-Host "❌ $file missing" -ForegroundColor Red
+    }
+}
+
+Write-Host ""
 Write-Host "=========================================" -ForegroundColor Green
-Write-Host "SETUP COMPLETE!" -ForegroundColor Green
+Write-Host "🎯 SETUP COMPLETE!" -ForegroundColor Green
 Write-Host "=========================================" -ForegroundColor Green
-Write-Host "Double-click 'CloudLabs Login' on desktop" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "👉 NEXT STEPS:" -ForegroundColor Yellow
+Write-Host "   1. RDP into the VM" -ForegroundColor White
+Write-Host "   2. Double-click 'CloudLabs Login' on Desktop" -ForegroundColor White
+Write-Host "   3. Wait for automatic Azure and AWS configuration" -ForegroundColor White
+Write-Host ""
+Write-Host "=========================================" -ForegroundColor Cyan
