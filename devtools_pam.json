@@ -40,6 +40,9 @@
         },
         "AWSRegion": {
             "value": "us-east-1"
+        },
+        "AWSAccountId": {
+            "value": "GET-TENANT-FQDN"
         }
     }
 }
