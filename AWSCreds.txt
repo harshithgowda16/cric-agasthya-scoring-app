@@ -1,13 +1,33 @@
-# AWS Credentials File
-# This file contains AWS credentials for the lab
+================================================================
+                CLOUDLABS CREDENTIALS
+================================================================
+Generated on: __DATE__
+Deployment ID: __DEPLOYMENT_ID__
 
-# AWS Account Details
-AWSAccountId=AWSAccountIdValue
-AWSRegion=AWSRegionValue
+----------------------------------------------------------------
+                   AZURE CREDENTIALS
+----------------------------------------------------------------
+🔹 Azure Username (UPN)      : __AZURE_USERNAME__
+🔹 Azure Password            : __AZURE_PASSWORD__
+🔹 Azure Tenant ID           : __AZURE_TENANT_ID__
+🔹 Azure Subscription ID     : __AZURE_SUBSCRIPTION_ID__
+🔹 Azure Tenant Domain       : __AZURE_TENANT_DOMAIN__
 
-# AWS IAM User Credentials
-AWSAccessKey=AWSAccessKeyValue
-AWSSecretKey=AWSSecretKeyValue
+----------------------------------------------------------------
+                    AWS CREDENTIALS
+----------------------------------------------------------------
+🔹 AWS Account ID            : __AWS_ACCOUNT_ID__
+🔹 AWS Region                : __AWS_REGION__
+🔹 AWS Access Key ID         : __AWS_ACCESS_KEY__
+🔹 AWS Secret Access Key     : __AWS_SECRET_KEY__
 
-# Deployment Info
-DeploymentID=DeploymentIDValue
+----------------------------------------------------------------
+              CONNECTION INFORMATION
+----------------------------------------------------------------
+🔹 VM Admin Username         : __VM_ADMIN_USERNAME__
+🔹 VM Admin Password         : __VM_ADMIN_PASSWORD__
+🔹 VM DNS Name               : __VM_DNS_NAME__
+
+================================================================
+        Save this file securely - Contains sensitive credentials
+================================================================
