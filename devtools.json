@@ -1,96 +1,67 @@
 {
-    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "adminUsername": {
+        "DID": {
             "type": "string"
         },
-        "adminPassword": {
+        "imgid": {
+            "type": "string"
+        },
+        "virtualMachineSize": {
+            "type": "string"
+        },
+        "diskType": {
+            "type": "string"
+        },
+        "vmAdminUserName": {
+            "type": "string"
+        },
+        "vmAdminPassword": {
             "type": "securestring"
         },
-        "AzureUserName": {
-            "type": "string"
-        },
-        "AzurePassword": {
-            "type": "securestring"
-        },
-        "ODLID": {
-            "type": "string"
-        },
-        "DeploymentID": {
-            "type": "string"
-        },
-        "InstallCloudLabsShadow": {
-            "type": "string",
-            "defaultValue": "yes",
-            "allowedValues": [
-                "yes",
-                "no"
-            ]
-        },
-        "trainerUserName": {
-            "type": "string"
-        },
-        "trainerUserPassword": {
+        "diskSizeGB": {
             "type": "string"
         }
     },
     "variables": {
-        "cloudlabsCommon": "[concat(' -AzureUserName ', parameters('AzureUserName'), ' -AzurePassword ', parameters('AzurePassword'), ' -AzureTenantID ', variables('AzureTenantID'), ' -AzureSubscriptionID ', variables('AzureSubscriptionID'), ' -ODLID ', parameters('ODLID'),' -InstallCloudLabsShadow ', parameters('InstallCloudLabsShadow'))]",
-        "Enable-CloudLabsEmbeddedShadow": "[concat(' -vmAdminUsername ', parameters('adminUsername'), ' -trainerUserName ', parameters('trainerUserName'), ' -trainerUserPassword ', parameters('trainerUserPassword'))]",
-        "AzureSubscriptionID": "[subscription().subscriptionId]",
-        "AzureTenantID": "[subscription().tenantId]",
-        "addressPrefix": "10.0.0.0/16",
-        "networkInterfaceName": "[concat(variables('vmName'), '-nic')]",
-        "networkSecurityGroupName": "[concat(variables('vmName'), '-nsg')]",
-        "publicIpAddressDNSName": "[concat('labvm', uniqueString(resourceGroup().id))]",
-        "publicIpAddressName": "[concat(variables('vmName'), '-pip')]",
-        "subnetName": "Subnet",
-        "subnetPrefix": "10.0.0.0/24",
-        "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets/',variables('virtualNetworkName'), variables('subnetName'))]",
-        "virtualMachineSize": "Standard_D4s_v5",
-        "virtualNetworkName": "vNet",
-        "vmName": "[concat('vm-',parameters('DeploymentID'))]",
+        "virtualNetworkName": "Labvm-vNet",
+        "virtualMachineName": "[concat('Labvm-', parameters('DID'))]",
+        "networkInterfaceName": "[concat(variables('virtualMachineName'), '-nic')]",
+        "networkSecurityGroupName": "[concat(variables('virtualMachineName'), '-nsg')]",
+        "publicIpAddressName": "[concat(variables('virtualMachineName'), '-pip')]",
+        "publicIpAddressDNSName": "[concat('labvm-host-', parameters('DID'))]",
+        "subnetName": "subnet1",
+        "osdiskname": "[concat('Labvm-OSDisk-', parameters('DID'))]",
         "location": "[resourceGroup().location]",
-        "imageId": "/subscriptions/49ed63f7-4523-4c84-b57b-212b550fae61/resourceGroups/Cloudlabs-mgmt-images/providers/Microsoft.Compute/galleries/CBRE_gallery/images/dev_tool_lab/versions/0.0.1"
+        "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets/', variables('virtualNetworkName'), variables('subnetName'))]",
+        "Enable-CloudLabsEmbeddedShadow": "[concat(' -vmAdminUserName ', parameters('vmAdminUserName'), ' -vmAdminPassword ', parameters('vmAdminPassword'))]"
     },
     "resources": [
         {
             "type": "Microsoft.Network/virtualNetworks",
-            "apiVersion": "2021-05-01",
+            "apiVersion": "2020-06-01",
             "name": "[variables('virtualNetworkName')]",
             "location": "[variables('location')]",
             "properties": {
                 "addressSpace": {
                     "addressPrefixes": [
-                        "[variables('addressPrefix')]"
+                        "10.0.0.0/16"
                     ]
                 },
                 "subnets": [
                     {
                         "name": "[variables('subnetName')]",
                         "properties": {
-                            "addressPrefix": "[variables('subnetPrefix')]"
+                            "addressPrefix": "10.0.0.0/24"
                         }
                     }
                 ]
             }
         },
         {
-            "type": "Microsoft.Network/publicIpAddresses",
-            "apiVersion": "2021-05-01",
-            "name": "[variables('publicIpAddressName')]",
-            "location": "[variables('location')]",
-            "properties": {
-                "publicIpAllocationMethod": "Dynamic",
-                "dnsSettings": {
-                    "domainNameLabel": "[variables('publicIpAddressDNSName')]"
-                }
-            }
-        },
-        {
             "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "2021-05-01",
+            "apiVersion": "2020-06-01",
             "name": "[variables('networkSecurityGroupName')]",
             "location": "[variables('location')]",
             "properties": {
@@ -98,28 +69,44 @@
                     {
                         "name": "default-allow-rdp",
                         "properties": {
-                            "priority": 110,
-                            "protocol": "TCP",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "sourceAddressPrefix": "*",
+                            "protocol": "Tcp",
                             "sourcePortRange": "*",
+                            "destinationPortRange": "3389",
+                            "sourceAddressPrefix": "*",
                             "destinationAddressPrefix": "*",
-                            "destinationPortRange": "3389"
+                            "access": "Allow",
+                            "priority": 1000,
+                            "direction": "Inbound"
                         }
                     }
                 ]
             }
         },
         {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2020-11-01",
+            "name": "[variables('publicIpAddressName')]",
+            "location": "[variables('location')]",
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('publicIpAddressDNSName')]"
+                }
+            }
+        },
+        {
             "type": "Microsoft.Network/networkInterfaces",
-            "apiVersion": "2021-05-01",
+            "apiVersion": "2020-11-01",
             "name": "[variables('networkInterfaceName')]",
             "location": "[variables('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
-                "[resourceId('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName'))]",
-                "[resourceId('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]"
+                "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
             ],
             "properties": {
                 "ipConfigurations": [
@@ -130,8 +117,8 @@
                                 "id": "[variables('subnetRef')]"
                             },
                             "privateIPAllocationMethod": "Dynamic",
-                            "publicIpAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]"
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))]"
                             }
                         }
                     }
@@ -143,28 +130,36 @@
         },
         {
             "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "2022-03-01",
-            "name": "[variables('vmName')]",
+            "apiVersion": "2022-08-01",
+            "name": "[variables('virtualMachineName')]",
             "location": "[variables('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/networkInterfaces/', variables('networkInterfaceName'))]"
+                "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
             ],
             "properties": {
                 "hardwareProfile": {
-                    "vmSize": "[variables('virtualMachineSize')]"
+                    "vmSize": "[parameters('virtualMachineSize')]"
+                },
+                "securityProfile": {
+                    "securityType": "TrustedLaunch",
+                    "uefiSettings": {
+                        "secureBootEnabled": true,
+                        "vTpmEnabled": true
+                    }
                 },
                 "storageProfile": {
-                    "imageReference": {
-                        "id": "[variables('imageId')]"
-                    },
                     "osDisk": {
                         "createOption": "FromImage",
-                        "name": "[concat(variables('vmName'), '-osdisk')]",
+                        "name": "[variables('osdiskname')]",
+                        "caching": "ReadWrite",
                         "managedDisk": {
-                            "storageAccountType": "Standard_LRS"
-                        }
+                            "storageAccountType": "[parameters('diskType')]"
+                        },
+                        "diskSizeGB": "[parameters('diskSizeGB')]"
                     },
-                    "dataDisks": []
+                    "imageReference": {
+                        "id": "[parameters('imgid')]"
+                    }
                 },
                 "networkProfile": {
                     "networkInterfaces": [
@@ -177,14 +172,14 @@
         },
         {
             "type": "Microsoft.Compute/virtualMachines/extensions",
-            "apiVersion": "2022-03-01",
-            "name": "[concat(variables('vmName'),'/SetPassword')]",
+            "apiVersion": "2022-08-01",
+            "name": "[concat(variables('virtualMachineName'), '/SetPassword')]",
             "location": "[variables('location')]",
             "tags": {
                 "displayName": "Set VM Password"
             },
             "dependsOn": [
-                "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
+                "[resourceId('Microsoft.Compute/virtualMachines', variables('virtualMachineName'))]"
             ],
             "properties": {
                 "publisher": "Microsoft.Compute",
@@ -192,57 +187,49 @@
                 "typeHandlerVersion": "2.0",
                 "autoUpgradeMinorVersion": true,
                 "protectedSettings": {
-                    "username": "[parameters('adminUsername')]",
+                    "username": "[parameters('vmAdminUserName')]",
                     "password": "mwpa46URD*Vu"
                 }
             }
         },
         {
             "type": "Microsoft.Compute/virtualMachines/extensions",
-            "apiVersion": "2022-03-01",
-            "name": "[concat(variables('vmName'),'/winExtension')]",
+            "apiVersion": "2020-06-01",
+            "name": "[concat(variables('virtualMachineName'), '/shadowextension')]",
             "location": "[variables('location')]",
-            "comments": "Script",
-            "tags": {
-                "displayName": "VM Extension"
-            },
             "dependsOn": [
-                "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmName'))]",
-                "[resourceId('Microsoft.Compute/virtualMachines/extensions', variables('vmName'), 'SetPassword')]"
+                "[resourceId('Microsoft.Compute/virtualMachines', variables('virtualMachineName'))]",
+                "[resourceId('Microsoft.Compute/virtualMachines/extensions', variables('virtualMachineName'), 'SetPassword')]"
             ],
             "properties": {
                 "publisher": "Microsoft.Compute",
                 "type": "CustomScriptExtension",
-                "typeHandlerVersion": "1.8",
+                "typeHandlerVersion": "1.10",
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "https://cbredevstorageact.blob.core.windows.net/templates/sandboxvm/psscript.ps1",
-                        "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
+                        "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1",
+                        "https://experienceazure.blob.core.windows.net/templates/SBID/scripts/psscript.ps1"
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File sandboxvm/psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'))]"
+                    "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File SBID/scripts/psscript.ps1', variables('Enable-CloudLabsEmbeddedShadow'))]"
                 }
             }
         }
     ],
     "outputs": {
-        "Deployment ID": {
-            "type": "String",
-            "value": "[parameters('DeploymentID')]"
+        "Labvm DNS Name": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))).dnsSettings.fqdn]"
         },
-        "VM Admin Username": {
-            "type": "String",
-            "value": "[parameters('adminUsername')]"
+        "Labvm Admin Username": {
+            "type": "string",
+            "value": "[parameters('vmAdminUserName')]"
         },
-        "VM Admin Password": {
-            "type": "String",
-            "value": "[parameters('adminPassword')]"
-        },
-        "VM DNS Name": {
-            "type": "String",
-            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpAddressName'))).dnsSettings.fqdn]"
+        "Labvm Admin Password": {
+            "type": "string",
+            "value": "mwpa46URD*Vu"
         }
     }
 }
