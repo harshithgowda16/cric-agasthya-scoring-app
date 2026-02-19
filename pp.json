@@ -8,6 +8,9 @@
         "adminPassword": {
             "type": "securestring"
         },
+        "PRTGRTVMadminPassword": {
+            "type": "securestring"
+        },
         "AzureUserName": {
             "type": "string"
         },
@@ -24,6 +27,9 @@
             "type": "string"
         },
         "trainerUserPassword": {
+            "type": "string"
+        },
+        "winimageid": {
             "type": "string"
         }
     },
@@ -60,9 +66,7 @@
 
         "virtualNetworkName": "vnet",
         "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
-        "subnetRef": "[concat(variables('vnetID'), '/subnets/subnet')]",
-
-        "customImageId": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025/versions/0.0.1"
+        "subnetRef": "[concat(variables('vnetID'), '/subnets/subnet')]"
     },
     "resources": [
 
@@ -264,7 +268,7 @@
                 "hardwareProfile": { "vmSize": "[variables('windowsVMSize')]" },
                 "storageProfile": {
                     "imageReference": {
-                        "id": "[variables('customImageId')]"
+                        "id": "[parameters('winimageid')]"
                     },
                     "osDisk": { "createOption": "fromImage", "managedDisk": { "storageAccountType": "StandardSSD_LRS" } },
                     "dataDisks": []
@@ -518,7 +522,7 @@
         },
         "VM2 Admin Password": {
             "type": "string",
-            "value": "[parameters('adminPassword')]"
+            "value": "[parameters('PRTGRTVMadminPassword')]"
         },
         "VM3 LinuxProbe DNS Name": {
             "type": "string",
