@@ -6,7 +6,7 @@
             "value": "azureuser"
         },
         "adminPassword": {
-            "value": "GEN-PASSWORD"
+            "value": "mwpa46URD*Vu"
         },
         "AzureUserName": {
             "value": "GET-AZUSER-UPN"
@@ -28,18 +28,6 @@
         },
         "trainerUserPassword": {
             "value": "Password.!!1"
-        },
-        "AWSAccessKey": {
-            "value": "GET-SERVICEPRINCIPAL-APPLICATION-ID"
-        },
-        "AWSSecretKey": {
-            "value": "GET-SERVICEPRINCIPAL-SECRET"
-        },
-        "AWSRegion": {
-            "value": "us-east-1"
-        },
-        "AWSAccountId": {
-            "value": "GET-TENANT-FQDN"
         }
     }
 }
