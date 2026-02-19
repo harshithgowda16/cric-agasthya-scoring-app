@@ -6,7 +6,7 @@
             "value": "GET-DEPLOYMENT-ID"
         },
         "imgid": {
-            "value": "/subscriptions/0dfa1615-34c5-4943-bce9-126083351e54/resourceGroups/devtest_harshith/providers/Microsoft.Compute/images/dev_tool_lab_image"
+            "value": "/subscriptions/0dfa1615-34c5-4943-bce9-126083351e54/resourceGroups/devtest_harshith/providers/Microsoft.Compute/images/dev_tool_lab_image/versions/0.0.1"
         },
         "virtualMachineSize": {
             "value": "Standard_D4s_v5"
