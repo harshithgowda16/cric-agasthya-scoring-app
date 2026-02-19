@@ -38,10 +38,10 @@
         "windowsVMSize": "Standard_F4s_v2",
         "ubuntuVMSize": "Standard_F4s_v2",
 
-        "vm1Name": "[concat('PRTG-Core-Server-01-', parameters('DeploymentID'))]",
-        "vm2Name": "[concat('PRTG-Remote-Probe-', parameters('DeploymentID'))]",
-        "vm3Name": "[concat('Multi-Platform-Probe-', parameters('DeploymentID'))]",
-        "vm4Name": "[concat('PRTG-Core-Server-02-', parameters('DeploymentID'))]",
+        "vm1Name": "[concat('PRTGCore01-', parameters('DeploymentID'))]",
+        "vm2Name": "[concat('PRTGRProbe-', parameters('DeploymentID'))]",
+        "vm3Name": "[concat('LinuxProbe-', parameters('DeploymentID'))]",
+        "vm4Name": "[concat('PRTGCore02-', parameters('DeploymentID'))]",
 
         "nic1": "[concat(variables('vm1Name'), '-nic')]",
         "nic2": "[concat(variables('vm2Name'), '-nic')]",
@@ -55,7 +55,7 @@
 
         "nsg1": "nsg-prtg-core-01",
         "nsg2": "nsg-prtg-remote-probe",
-        "nsg3": "nsg-multi-platform-probe",
+        "nsg3": "nsg-linux-probe",
         "nsg4": "nsg-prtg-core-02",
 
         "virtualNetworkName": "vnet",
@@ -87,16 +87,12 @@
             "location": "[variables('location')]",
             "properties": {
                 "addressSpace": {
-                    "addressPrefixes": [
-                        "10.0.0.0/16"
-                    ]
+                    "addressPrefixes": [ "10.0.0.0/16" ]
                 },
                 "subnets": [
                     {
                         "name": "subnet",
-                        "properties": {
-                            "addressPrefix": "10.0.0.0/24"
-                        }
+                        "properties": { "addressPrefix": "10.0.0.0/24" }
                     }
                 ]
             }
@@ -107,16 +103,11 @@
             "apiVersion": "2020-08-01",
             "name": "[variables('pip1')]",
             "location": "[variables('location')]",
-            "sku": {
-                "name": "Standard",
-                "tier": "Regional"
-            },
+            "sku": { "name": "Standard", "tier": "Regional" },
             "properties": {
                 "publicIPAddressVersion": "IPv4",
                 "publicIpAllocationMethod": "Static",
-                "dnsSettings": {
-                    "domainNameLabel": "[variables('pip1')]"
-                }
+                "dnsSettings": { "domainNameLabel": "[variables('pip1')]" }
             }
         },
         {
@@ -126,45 +117,9 @@
             "location": "[variables('location')]",
             "properties": {
                 "securityRules": [
-                    {
-                        "name": "Port_80",
-                        "properties": {
-                            "priority": 120,
-                            "protocol": "TCP",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "sourceAddressPrefix": "*",
-                            "sourcePortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "destinationPortRange": "80"
-                        }
-                    },
-                    {
-                        "name": "Port_443",
-                        "properties": {
-                            "priority": 130,
-                            "protocol": "TCP",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "sourceAddressPrefix": "*",
-                            "sourcePortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "destinationPortRange": "443"
-                        }
-                    },
-                    {
-                        "name": "default-allow-rdp",
-                        "properties": {
-                            "priority": 1000,
-                            "protocol": "TCP",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "sourceAddressPrefix": "*",
-                            "sourcePortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "destinationPortRange": "3389"
-                        }
-                    }
+                    { "name": "Port_80",           "properties": { "priority": 120,  "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "80"   } },
+                    { "name": "Port_443",          "properties": { "priority": 130,  "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "443"  } },
+                    { "name": "default-allow-rdp", "properties": { "priority": 1000, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "3389" } }
                 ]
             }
         },
@@ -183,20 +138,14 @@
                     {
                         "name": "ipconfig1",
                         "properties": {
-                            "subnet": {
-                                "id": "[variables('subnetRef')]"
-                            },
+                            "subnet": { "id": "[variables('subnetRef')]" },
                             "privateIPAllocationMethod": "Static",
                             "privateIPAddress": "10.0.0.4",
-                            "publicIpAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('pip1'))]"
-                            }
+                            "publicIpAddress": { "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('pip1'))]" }
                         }
                     }
                 ],
-                "networkSecurityGroup": {
-                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg1'))]"
-                }
+                "networkSecurityGroup": { "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg1'))]" }
             }
         },
         {
@@ -212,13 +161,9 @@
                     "computerName": "[variables('vm1Name')]",
                     "adminUsername": "[parameters('adminUsername')]",
                     "adminPassword": "[parameters('adminPassword')]",
-                    "windowsConfiguration": {
-                        "provisionVmAgent": "true"
-                    }
+                    "windowsConfiguration": { "provisionVmAgent": "true" }
                 },
-                "hardwareProfile": {
-                    "vmSize": "[variables('windowsVMSize')]"
-                },
+                "hardwareProfile": { "vmSize": "[variables('windowsVMSize')]" },
                 "storageProfile": {
                     "imageReference": {
                         "publisher": "MicrosoftWindowsServer",
@@ -226,20 +171,11 @@
                         "sku": "2025-datacenter-g2",
                         "version": "latest"
                     },
-                    "osDisk": {
-                        "createOption": "fromImage",
-                        "managedDisk": {
-                            "storageAccountType": "StandardSSD_LRS"
-                        }
-                    },
+                    "osDisk": { "createOption": "fromImage", "managedDisk": { "storageAccountType": "StandardSSD_LRS" } },
                     "dataDisks": []
                 },
                 "networkProfile": {
-                    "networkInterfaces": [
-                        {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic1'))]"
-                        }
-                    ]
+                    "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic1'))]" } ]
                 }
             },
             "resources": [
@@ -248,9 +184,7 @@
                     "name": "vmExtension1",
                     "apiVersion": "2015-06-15",
                     "location": "[variables('location')]",
-                    "dependsOn": [
-                        "[concat('Microsoft.Compute/virtualMachines/', variables('vm1Name'))]"
-                    ],
+                    "dependsOn": [ "[concat('Microsoft.Compute/virtualMachines/', variables('vm1Name'))]" ],
                     "properties": {
                         "publisher": "Microsoft.Compute",
                         "type": "CustomScriptExtension",
@@ -273,16 +207,11 @@
             "apiVersion": "2020-08-01",
             "name": "[variables('pip2')]",
             "location": "[variables('location')]",
-            "sku": {
-                "name": "Standard",
-                "tier": "Regional"
-            },
+            "sku": { "name": "Standard", "tier": "Regional" },
             "properties": {
                 "publicIPAddressVersion": "IPv4",
                 "publicIpAllocationMethod": "Static",
-                "dnsSettings": {
-                    "domainNameLabel": "[variables('pip2')]"
-                }
+                "dnsSettings": { "domainNameLabel": "[variables('pip2')]" }
             }
         },
         {
@@ -292,45 +221,9 @@
             "location": "[variables('location')]",
             "properties": {
                 "securityRules": [
-                    {
-                        "name": "Port_80",
-                        "properties": {
-                            "priority": 120,
-                            "protocol": "TCP",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "sourceAddressPrefix": "*",
-                            "sourcePortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "destinationPortRange": "80"
-                        }
-                    },
-                    {
-                        "name": "Port_443",
-                        "properties": {
-                            "priority": 130,
-                            "protocol": "TCP",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "sourceAddressPrefix": "*",
-                            "sourcePortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "destinationPortRange": "443"
-                        }
-                    },
-                    {
-                        "name": "default-allow-rdp",
-                        "properties": {
-                            "priority": 1000,
-                            "protocol": "TCP",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "sourceAddressPrefix": "*",
-                            "sourcePortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "destinationPortRange": "3389"
-                        }
-                    }
+                    { "name": "Port_80",           "properties": { "priority": 120,  "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "80"   } },
+                    { "name": "Port_443",          "properties": { "priority": 130,  "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "443"  } },
+                    { "name": "default-allow-rdp", "properties": { "priority": 1000, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "3389" } }
                 ]
             }
         },
@@ -349,20 +242,14 @@
                     {
                         "name": "ipconfig1",
                         "properties": {
-                            "subnet": {
-                                "id": "[variables('subnetRef')]"
-                            },
+                            "subnet": { "id": "[variables('subnetRef')]" },
                             "privateIPAllocationMethod": "Static",
                             "privateIPAddress": "10.0.0.5",
-                            "publicIpAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('pip2'))]"
-                            }
+                            "publicIpAddress": { "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('pip2'))]" }
                         }
                     }
                 ],
-                "networkSecurityGroup": {
-                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg2'))]"
-                }
+                "networkSecurityGroup": { "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg2'))]" }
             }
         },
         {
@@ -374,35 +261,16 @@
                 "[concat('Microsoft.Network/networkInterfaces/', variables('nic2'))]"
             ],
             "properties": {
-                "osProfile": {
-                    "computerName": "[variables('vm2Name')]",
-                    "adminUsername": "[parameters('adminUsername')]",
-                    "adminPassword": "[parameters('adminPassword')]",
-                    "windowsConfiguration": {
-                        "provisionVmAgent": "true"
-                    }
-                },
-                "hardwareProfile": {
-                    "vmSize": "[variables('windowsVMSize')]"
-                },
+                "hardwareProfile": { "vmSize": "[variables('windowsVMSize')]" },
                 "storageProfile": {
                     "imageReference": {
                         "id": "[variables('customImageId')]"
                     },
-                    "osDisk": {
-                        "createOption": "fromImage",
-                        "managedDisk": {
-                            "storageAccountType": "StandardSSD_LRS"
-                        }
-                    },
+                    "osDisk": { "createOption": "fromImage", "managedDisk": { "storageAccountType": "StandardSSD_LRS" } },
                     "dataDisks": []
                 },
                 "networkProfile": {
-                    "networkInterfaces": [
-                        {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic2'))]"
-                        }
-                    ]
+                    "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic2'))]" } ]
                 }
             },
             "resources": [
@@ -411,9 +279,7 @@
                     "name": "vmExtension2",
                     "apiVersion": "2015-06-15",
                     "location": "[variables('location')]",
-                    "dependsOn": [
-                        "[concat('Microsoft.Compute/virtualMachines/', variables('vm2Name'))]"
-                    ],
+                    "dependsOn": [ "[concat('Microsoft.Compute/virtualMachines/', variables('vm2Name'))]" ],
                     "properties": {
                         "publisher": "Microsoft.Compute",
                         "type": "CustomScriptExtension",
@@ -433,19 +299,13 @@
 
         {
             "type": "Microsoft.Network/publicIpAddresses",
-            "apiVersion": "2020-08-01",
+            "apiVersion": "2017-08-01",
             "name": "[variables('pip3')]",
             "location": "[variables('location')]",
-            "sku": {
-                "name": "Standard",
-                "tier": "Regional"
-            },
             "properties": {
                 "publicIPAddressVersion": "IPv4",
                 "publicIpAllocationMethod": "Static",
-                "dnsSettings": {
-                    "domainNameLabel": "[variables('pip3')]"
-                }
+                "dnsSettings": { "domainNameLabel": "[variables('pip3')]" }
             }
         },
         {
@@ -455,45 +315,9 @@
             "location": "[variables('location')]",
             "properties": {
                 "securityRules": [
-                    {
-                        "name": "Port_80",
-                        "properties": {
-                            "priority": 120,
-                            "protocol": "TCP",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "sourceAddressPrefix": "*",
-                            "sourcePortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "destinationPortRange": "80"
-                        }
-                    },
-                    {
-                        "name": "Port_443",
-                        "properties": {
-                            "priority": 130,
-                            "protocol": "TCP",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "sourceAddressPrefix": "*",
-                            "sourcePortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "destinationPortRange": "443"
-                        }
-                    },
-                    {
-                        "name": "default-allow-ssh",
-                        "properties": {
-                            "priority": 1000,
-                            "protocol": "TCP",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "sourceAddressPrefix": "*",
-                            "sourcePortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "destinationPortRange": "22"
-                        }
-                    }
+                    { "name": "SSH",      "properties": { "priority": 110, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "22"   } },
+                    { "name": "Port_80",  "properties": { "priority": 120, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "80"   } },
+                    { "name": "Port_443", "properties": { "priority": 130, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "443"  } }
                 ]
             }
         },
@@ -512,88 +336,53 @@
                     {
                         "name": "ipconfig1",
                         "properties": {
-                            "subnet": {
-                                "id": "[variables('subnetRef')]"
-                            },
+                            "subnet": { "id": "[variables('subnetRef')]" },
                             "privateIPAllocationMethod": "Static",
                             "privateIPAddress": "10.0.0.6",
-                            "publicIpAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('pip3'))]"
-                            }
+                            "publicIpAddress": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('pip3'))]" }
                         }
                     }
                 ],
-                "networkSecurityGroup": {
-                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg3'))]"
-                }
+                "networkSecurityGroup": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('nsg3'))]" }
             }
         },
         {
             "name": "[variables('vm3Name')]",
             "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "2024-11-01",
+            "apiVersion": "2021-07-01",
             "location": "[variables('location')]",
             "dependsOn": [
                 "[concat('Microsoft.Network/networkInterfaces/', variables('nic3'))]"
             ],
             "properties": {
+                "hardwareProfile": { "vmSize": "[variables('ubuntuVMSize')]" },
+                "storageProfile": {
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "name": "[concat(variables('vm3Name'), '-osdisk')]",
+                        "diskSizeGB": 128,
+                        "managedDisk": { "storageAccountType": "StandardSSD_LRS" }
+                    },
+                    "imageReference": {
+                        "publisher": "canonical",
+                        "offer": "ubuntu-24_04-lts",
+                        "sku": "server",
+                        "version": "latest"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic3'))]" } ]
+                },
                 "osProfile": {
                     "computerName": "[variables('vm3Name')]",
                     "adminUsername": "[parameters('adminUsername')]",
                     "adminPassword": "[parameters('adminPassword')]",
                     "linuxConfiguration": {
-                        "disablePasswordAuthentication": false
-                    }
-                },
-                "hardwareProfile": {
-                    "vmSize": "[variables('ubuntuVMSize')]"
-                },
-                "storageProfile": {
-                    "imageReference": {
-                        "publisher": "Canonical",
-                        "offer": "ubuntu-24_04-lts",
-                        "sku": "server",
-                        "version": "latest"
-                    },
-                    "osDisk": {
-                        "createOption": "fromImage",
-                        "managedDisk": {
-                            "storageAccountType": "StandardSSD_LRS"
-                        }
-                    },
-                    "dataDisks": []
-                },
-                "networkProfile": {
-                    "networkInterfaces": [
-                        {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic3'))]"
-                        }
-                    ]
-                }
-            },
-            "resources": [
-                {
-                    "type": "extensions",
-                    "name": "vmExtension3",
-                    "apiVersion": "2019-07-01",
-                    "location": "[variables('location')]",
-                    "dependsOn": [
-                        "[concat('Microsoft.Compute/virtualMachines/', variables('vm3Name'))]"
-                    ],
-                    "properties": {
-                        "publisher": "Microsoft.Azure.Extensions",
-                        "type": "CustomScript",
-                        "typeHandlerVersion": "2.1",
-                        "autoUpgradeMinorVersion": true,
-                        "settings": {
-                            "fileUris": [
-                                "https://experienceazure.blob.core.windows.net/templates/paessler/Lab1/psscript.sh"
-                            ],
-                            "commandToExecute": "bash psscript.sh"
-                        }
+                        "disablePasswordAuthentication": false,
+                        "patchSettings": { "patchMode": "ImageDefault" }
                     }
                 }
-            ]
+            }
         },
 
         {
@@ -601,16 +390,11 @@
             "apiVersion": "2020-08-01",
             "name": "[variables('pip4')]",
             "location": "[variables('location')]",
-            "sku": {
-                "name": "Standard",
-                "tier": "Regional"
-            },
+            "sku": { "name": "Standard", "tier": "Regional" },
             "properties": {
                 "publicIPAddressVersion": "IPv4",
                 "publicIpAllocationMethod": "Static",
-                "dnsSettings": {
-                    "domainNameLabel": "[variables('pip4')]"
-                }
+                "dnsSettings": { "domainNameLabel": "[variables('pip4')]" }
             }
         },
         {
@@ -620,45 +404,9 @@
             "location": "[variables('location')]",
             "properties": {
                 "securityRules": [
-                    {
-                        "name": "Port_80",
-                        "properties": {
-                            "priority": 120,
-                            "protocol": "TCP",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "sourceAddressPrefix": "*",
-                            "sourcePortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "destinationPortRange": "80"
-                        }
-                    },
-                    {
-                        "name": "Port_443",
-                        "properties": {
-                            "priority": 130,
-                            "protocol": "TCP",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "sourceAddressPrefix": "*",
-                            "sourcePortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "destinationPortRange": "443"
-                        }
-                    },
-                    {
-                        "name": "default-allow-rdp",
-                        "properties": {
-                            "priority": 1000,
-                            "protocol": "TCP",
-                            "access": "Allow",
-                            "direction": "Inbound",
-                            "sourceAddressPrefix": "*",
-                            "sourcePortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "destinationPortRange": "3389"
-                        }
-                    }
+                    { "name": "Port_80",           "properties": { "priority": 120,  "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "80"   } },
+                    { "name": "Port_443",          "properties": { "priority": 130,  "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "443"  } },
+                    { "name": "default-allow-rdp", "properties": { "priority": 1000, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "3389" } }
                 ]
             }
         },
@@ -677,20 +425,14 @@
                     {
                         "name": "ipconfig1",
                         "properties": {
-                            "subnet": {
-                                "id": "[variables('subnetRef')]"
-                            },
+                            "subnet": { "id": "[variables('subnetRef')]" },
                             "privateIPAllocationMethod": "Static",
                             "privateIPAddress": "10.0.0.7",
-                            "publicIpAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('pip4'))]"
-                            }
+                            "publicIpAddress": { "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('pip4'))]" }
                         }
                     }
                 ],
-                "networkSecurityGroup": {
-                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg4'))]"
-                }
+                "networkSecurityGroup": { "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg4'))]" }
             }
         },
         {
@@ -706,13 +448,9 @@
                     "computerName": "[variables('vm4Name')]",
                     "adminUsername": "[parameters('adminUsername')]",
                     "adminPassword": "[parameters('adminPassword')]",
-                    "windowsConfiguration": {
-                        "provisionVmAgent": "true"
-                    }
+                    "windowsConfiguration": { "provisionVmAgent": "true" }
                 },
-                "hardwareProfile": {
-                    "vmSize": "[variables('windowsVMSize')]"
-                },
+                "hardwareProfile": { "vmSize": "[variables('windowsVMSize')]" },
                 "storageProfile": {
                     "imageReference": {
                         "publisher": "MicrosoftWindowsServer",
@@ -720,20 +458,11 @@
                         "sku": "2025-datacenter-g2",
                         "version": "latest"
                     },
-                    "osDisk": {
-                        "createOption": "fromImage",
-                        "managedDisk": {
-                            "storageAccountType": "StandardSSD_LRS"
-                        }
-                    },
+                    "osDisk": { "createOption": "fromImage", "managedDisk": { "storageAccountType": "StandardSSD_LRS" } },
                     "dataDisks": []
                 },
                 "networkProfile": {
-                    "networkInterfaces": [
-                        {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic4'))]"
-                        }
-                    ]
+                    "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic4'))]" } ]
                 }
             },
             "resources": [
@@ -742,9 +471,7 @@
                     "name": "vmExtension4",
                     "apiVersion": "2015-06-15",
                     "location": "[variables('location')]",
-                    "dependsOn": [
-                        "[concat('Microsoft.Compute/virtualMachines/', variables('vm4Name'))]"
-                    ],
+                    "dependsOn": [ "[concat('Microsoft.Compute/virtualMachines/', variables('vm4Name'))]" ],
                     "properties": {
                         "publisher": "Microsoft.Compute",
                         "type": "CustomScriptExtension",
@@ -792,7 +519,7 @@
             "type": "string",
             "value": "[parameters('adminPassword')]"
         },
-        "VM3 Multi-Platform-Probe DNS Name": {
+        "VM3 Linux Probe DNS Name": {
             "type": "string",
             "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip3'))).dnsSettings.fqdn]"
         },
