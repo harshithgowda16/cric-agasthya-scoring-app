@@ -8,6 +8,9 @@
         "adminPassword": {
             "value": "GEN-PASSWORD"
         },
+        "PRTGRTVMadminPassword": {
+            "value": "PRTG4training"
+        },
         "AzureUserName": {
             "value": "GET-AZUSER-UPN"
         },
@@ -25,6 +28,9 @@
         },
         "trainerUserPassword": {
             "value": "Password.1!!"
+        },
+        "winimageid": {
+            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025/versions/0.0.1"
         }
     }
 }
