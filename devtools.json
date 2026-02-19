@@ -178,6 +178,28 @@
         {
             "type": "Microsoft.Compute/virtualMachines/extensions",
             "apiVersion": "2022-03-01",
+            "name": "[concat(variables('vmName'),'/SetPassword')]",
+            "location": "[variables('location')]",
+            "tags": {
+                "displayName": "Set VM Password"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.Compute",
+                "type": "VMAccessAgent",
+                "typeHandlerVersion": "2.0",
+                "autoUpgradeMinorVersion": true,
+                "protectedSettings": {
+                    "username": "[parameters('adminUsername')]",
+                    "password": "mwpa46URD*Vu"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "2022-03-01",
             "name": "[concat(variables('vmName'),'/winExtension')]",
             "location": "[variables('location')]",
             "comments": "Script",
@@ -185,7 +207,8 @@
                 "displayName": "VM Extension"
             },
             "dependsOn": [
-                "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
+                "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmName'))]",
+                "[resourceId('Microsoft.Compute/virtualMachines/extensions', variables('vmName'), 'SetPassword')]"
             ],
             "properties": {
                 "publisher": "Microsoft.Compute",
