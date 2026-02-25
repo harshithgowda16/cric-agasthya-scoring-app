@@ -29,7 +29,16 @@
         "trainerUserPassword": {
             "type": "string"
         },
-        "winimageid": {
+        "vm1ImageId": {
+            "type": "string"
+        },
+        "vm2ImageId": {
+            "type": "string"
+        },
+        "vm3ImageId": {
+            "type": "string"
+        },
+        "vm4ImageId": {
             "type": "string"
         }
     },
@@ -162,7 +171,7 @@
             ],
             "properties": {
                 "osProfile": {
-                    "computerName": "PRTG1",
+                    "computerName": "PRTG Core 01",
                     "adminUsername": "[parameters('adminUsername')]",
                     "adminPassword": "[parameters('adminPassword')]",
                     "windowsConfiguration": { "provisionVmAgent": "true" }
@@ -170,10 +179,7 @@
                 "hardwareProfile": { "vmSize": "[variables('windowsVMSize')]" },
                 "storageProfile": {
                     "imageReference": {
-                        "publisher": "MicrosoftWindowsServer",
-                        "offer": "WindowsServer",
-                        "sku": "2025-datacenter-g2",
-                        "version": "latest"
+                        "id": "[parameters('vm1ImageId')]"
                     },
                     "osDisk": { "createOption": "fromImage", "managedDisk": { "storageAccountType": "StandardSSD_LRS" } },
                     "dataDisks": []
@@ -265,10 +271,16 @@
                 "[concat('Microsoft.Network/networkInterfaces/', variables('nic2'))]"
             ],
             "properties": {
+                "osProfile": {
+                    "computerName": "Remote Probe 01",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('PRTGRTVMadminPassword')]",
+                    "windowsConfiguration": { "provisionVmAgent": "true" }
+                },
                 "hardwareProfile": { "vmSize": "[variables('windowsVMSize')]" },
                 "storageProfile": {
                     "imageReference": {
-                        "id": "[parameters('winimageid')]"
+                        "id": "[parameters('vm2ImageId')]"
                     },
                     "osDisk": { "createOption": "fromImage", "managedDisk": { "storageAccountType": "StandardSSD_LRS" } },
                     "dataDisks": []
@@ -369,17 +381,14 @@
                         "managedDisk": { "storageAccountType": "StandardSSD_LRS" }
                     },
                     "imageReference": {
-                        "publisher": "canonical",
-                        "offer": "ubuntu-24_04-lts",
-                        "sku": "server",
-                        "version": "latest"
+                        "id": "[parameters('vm3ImageId')]"
                     }
                 },
                 "networkProfile": {
                     "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic3'))]" } ]
                 },
                 "osProfile": {
-                    "computerName": "LinuxProbe",
+                    "computerName": "Multi-Platform Probe",
                     "adminUsername": "[parameters('adminUsername')]",
                     "adminPassword": "[parameters('adminPassword')]",
                     "linuxConfiguration": {
@@ -450,7 +459,7 @@
             ],
             "properties": {
                 "osProfile": {
-                    "computerName": "PRTG2",
+                    "computerName": "PRTG Core 02",
                     "adminUsername": "[parameters('adminUsername')]",
                     "adminPassword": "[parameters('adminPassword')]",
                     "windowsConfiguration": { "provisionVmAgent": "true" }
@@ -458,10 +467,7 @@
                 "hardwareProfile": { "vmSize": "[variables('windowsVMSize')]" },
                 "storageProfile": {
                     "imageReference": {
-                        "publisher": "MicrosoftWindowsServer",
-                        "offer": "WindowsServer",
-                        "sku": "2025-datacenter-g2",
-                        "version": "latest"
+                        "id": "[parameters('vm4ImageId')]"
                     },
                     "osDisk": { "createOption": "fromImage", "managedDisk": { "storageAccountType": "StandardSSD_LRS" } },
                     "dataDisks": []
@@ -512,6 +518,10 @@
             "type": "string",
             "value": "[parameters('adminPassword')]"
         },
+        "VM1 Private IP": {
+            "type": "string",
+            "value": "10.0.0.4"
+        },
         "VM2 RP DNS Name": {
             "type": "string",
             "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip2'))).dnsSettings.fqdn]"
@@ -523,6 +533,10 @@
         "VM2 Admin Password": {
             "type": "string",
             "value": "[parameters('PRTGRTVMadminPassword')]"
+        },
+        "VM2 Private IP": {
+            "type": "string",
+            "value": "10.0.0.5"
         },
         "VM3 LinuxProbe DNS Name": {
             "type": "string",
@@ -536,6 +550,10 @@
             "type": "string",
             "value": "[parameters('adminPassword')]"
         },
+        "VM3 Private IP": {
+            "type": "string",
+            "value": "10.0.0.6"
+        },
         "VM4 PRTG2 DNS Name": {
             "type": "string",
             "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip4'))).dnsSettings.fqdn]"
@@ -547,6 +565,10 @@
         "VM4 Admin Password": {
             "type": "string",
             "value": "[parameters('adminPassword')]"
+        },
+        "VM4 Private IP": {
+            "type": "string",
+            "value": "10.0.0.7"
         }
     }
 }
