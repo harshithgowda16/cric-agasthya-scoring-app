@@ -216,11 +216,6 @@
           "osDisk": { "createOption": "FromImage", "name": "[variables('osDisk2')]", "caching": "ReadWrite", "managedDisk": { "storageAccountType": "[variables('diskType')]" }, "diskSizeGB": "[variables('diskSizeGB')]" },
           "imageReference": { "id": "[parameters('vm2ImageId')]" }
         },
-        "osProfile": {
-          "computerName": "prtgprobe01",
-          "adminUsername": "[variables('adminUsername')]",
-          "adminPassword": "[variables('adminUserPassword')]"
-        },
         "networkProfile": { "networkInterfaces": [{ "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic2'))]" }] }
       }
     },
