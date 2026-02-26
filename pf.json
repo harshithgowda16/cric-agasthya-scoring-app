@@ -53,9 +53,10 @@
     "AzureSubscriptionID": "[subscription().subscriptionId]",
     "AzureTenantID": "[subscription().tenantId]",
     "location": "[resourceGroup().location]",
-    "subnetName": "Subnet",
-    "virtualNetworkName": "[concat('paesslerLab-vNet-', variables('location'))]",
-    "subnetRef": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/paessler-prod-vnet/providers/Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'), '/subnets/', variables('subnetName'))]",
+    
+    "virtualNetworkName": "vnet",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+    "subnetRef": "[concat(variables('vnetID'), '/subnets/subnet')]",
     "windowsVMSize": "Standard_F4s_v2",
     "ubuntuVMSize": "Standard_F4s_v2",
     "diskType": "StandardSSD_LRS",
@@ -107,6 +108,24 @@
     },
 
     {
+      "name": "[variables('virtualNetworkName')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2018-02-01",
+      "location": "[variables('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [ "10.0.0.0/16" ]
+        },
+        "subnets": [
+          {
+            "name": "subnet",
+            "properties": { "addressPrefix": "10.0.0.0/24" }
+          }
+        ]
+      }
+    },
+
+        {
       "type": "Microsoft.Network/publicIpAddresses",
       "apiVersion": "2020-08-01",
       "name": "[variables('pip1')]",
@@ -136,6 +155,7 @@
       "name": "[variables('nic1')]",
       "location": "[variables('location')]",
       "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
         "[concat('Microsoft.Network/publicIpAddresses/', variables('pip1'))]",
         "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsg1'))]"
       ],
@@ -146,7 +166,6 @@
             "properties": {
               "subnet": { "id": "[variables('subnetRef')]" },
               "privateIPAllocationMethod": "Dynamic",
-              "privateIPAddress": "10.0.0.4",
               "publicIpAddress": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('pip1'))]" }
             }
           }
@@ -237,6 +256,7 @@
       "name": "[variables('nic2')]",
       "location": "[variables('location')]",
       "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
         "[concat('Microsoft.Network/publicIpAddresses/', variables('pip2'))]",
         "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsg2'))]"
       ],
@@ -247,7 +267,6 @@
             "properties": {
               "subnet": { "id": "[variables('subnetRef')]" },
               "privateIPAllocationMethod": "Dynamic",
-              "privateIPAddress": "10.0.0.5",
               "publicIpAddress": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('pip2'))]" }
             }
           }
@@ -338,6 +357,7 @@
       "name": "[variables('nic3')]",
       "location": "[variables('location')]",
       "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
         "[concat('Microsoft.Network/publicIpAddresses/', variables('pip3'))]",
         "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsg3'))]"
       ],
@@ -348,7 +368,6 @@
             "properties": {
               "subnet": { "id": "[variables('subnetRef')]" },
               "privateIPAllocationMethod": "Dynamic",
-              "privateIPAddress": "10.0.0.6",
               "publicIpAddress": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('pip3'))]" }
             }
           }
@@ -407,7 +426,7 @@
           ]
         },
         "protectedSettings": {
-          "commandToExecute": "bash ptrg.sh"
+          "commandToExecute": "[concat('bash ptrg.sh ', parameters('resetUserPassword'))]"
         }
       }
     },
@@ -442,6 +461,7 @@
       "name": "[variables('nic4')]",
       "location": "[variables('location')]",
       "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
         "[concat('Microsoft.Network/publicIpAddresses/', variables('pip4'))]",
         "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsg4'))]"
       ],
@@ -452,7 +472,6 @@
             "properties": {
               "subnet": { "id": "[variables('subnetRef')]" },
               "privateIPAllocationMethod": "Dynamic",
-              "privateIPAddress": "10.0.0.7",
               "publicIpAddress": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('pip4'))]" }
             }
           }
