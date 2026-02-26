@@ -3,13 +3,10 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "adminUsername": {
-            "value": "labuser"
+            "value": "training"
         },
-        "adminPassword": {
-            "value": "GEN-PASSWORD"
-        },
-        "PRTGRTVMadminPassword": {
-            "value": "PRTG4training"
+        "adminUserPassword": {
+            "value": "prtg4training"
         },
         "AzureUserName": {
             "value": "GET-AZUSER-UPN"
@@ -23,23 +20,29 @@
         "DeploymentID": {
             "value": "GET-DEPLOYMENT-ID"
         },
+        "InstallCloudLabsShadow": {
+            "value": "yes"
+        },
         "trainerUserName": {
             "value": "trainer"
         },
         "trainerUserPassword": {
             "value": "Password.1!!"
         },
+        "resetUserPassword": {
+            "value": "prtg4training"
+        },
         "vm1ImageId": {
-            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025/versions/0.0.1"
+            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/prtgcore01/versions/latest"
         },
         "vm2ImageId": {
-            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025/versions/0.0.1"
+            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/prtgprobe01/versions/latest"
         },
         "vm3ImageId": {
-            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025/versions/0.0.1"
+            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/prtgprobe02/versions/latest"
         },
         "vm4ImageId": {
-            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025/versions/0.0.1"
+            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/prtgcore02/versions/latest"
         }
     }
 }
