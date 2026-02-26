@@ -1,15 +1,587 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "DID": {
-      "value": "GET-DEPLOYMENT-ID"
+    "adminUsername": {
+      "type": "string"
     },
-    "Lab-VM-AdminUsername": {
-      "value": "azadmin"
+    "adminUserPassword": {
+      "type": "securestring"
     },
-    "Lab-VM-AdminPassword": {
-      "value": "Password.1!!"
+    "AzureUserName": {
+      "type": "string"
+    },
+    "AzurePassword": {
+      "type": "securestring"
+    },
+    "ODLID": {
+      "type": "string"
+    },
+    "DeploymentID": {
+      "type": "string"
+    },
+    "InstallCloudLabsShadow": {
+      "type": "string",
+      "defaultValue": "yes",
+      "allowedValues": [ "yes", "no" ]
+    },
+    "trainerUserName": {
+      "type": "string"
+    },
+    "trainerUserPassword": {
+      "type": "string"
+    },
+    "resetUserPassword": {
+      "type": "string"
+    },
+    "vm1ImageId": {
+      "type": "string"
+    },
+    "vm2ImageId": {
+      "type": "string"
+    },
+    "vm3ImageId": {
+      "type": "string"
+    },
+    "vm4ImageId": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "cloudlabsCommon": "[concat(' -AzureUserName ', parameters('AzureUserName'), ' -AzurePassword ', parameters('AzurePassword'), ' -AzureTenantID ', variables('AzureTenantID'), ' -AzureSubscriptionID ', variables('AzureSubscriptionID'), ' -ODLID ', parameters('ODLID'), ' -InstallCloudLabsShadow ', parameters('InstallCloudLabsShadow'))]",
+    "Enable-CloudLabsEmbeddedShadow": "[concat(' -vmAdminUsername ', parameters('adminUsername'), ' -trainerUserName ', parameters('trainerUserName'), ' -trainerUserPassword ', parameters('trainerUserPassword'), ' -resetUserPassword ', parameters('resetUserPassword'))]",
+    "AzureSubscriptionID": "[subscription().subscriptionId]",
+    "AzureTenantID": "[subscription().tenantId]",
+    "location": "[resourceGroup().location]",
+    "subnetName": "Subnet",
+    "virtualNetworkName": "[concat('paesslerLab-vNet-', variables('location'))]",
+    "subnetRef": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/paessler-prod-vnet/providers/Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'), '/subnets/', variables('subnetName'))]",
+    "windowsVMSize": "Standard_F4s_v2",
+    "ubuntuVMSize": "Standard_F4s_v2",
+    "diskType": "StandardSSD_LRS",
+
+    "vm1Name": "prtgcore01",
+    "vm2Name": "remoteprobe01",
+    "vm3Name": "multiplatformprobe",
+    "vm4Name": "prtgcore02",
+
+    "nic1": "[concat(variables('vm1Name'), '-nic')]",
+    "nic2": "[concat(variables('vm2Name'), '-nic')]",
+    "nic3": "[concat(variables('vm3Name'), '-nic')]",
+    "nic4": "[concat(variables('vm4Name'), '-nic')]",
+
+    "nsg1": "[concat(variables('vm1Name'), '-nsg')]",
+    "nsg2": "[concat(variables('vm2Name'), '-nsg')]",
+    "nsg3": "[concat(variables('vm3Name'), '-nsg')]",
+    "nsg4": "[concat(variables('vm4Name'), '-nsg')]",
+
+    "pip1": "[concat(variables('vm1Name'), '-pip')]",
+    "pip2": "[concat(variables('vm2Name'), '-pip')]",
+    "pip3": "[concat(variables('vm3Name'), '-pip')]",
+    "pip4": "[concat(variables('vm4Name'), '-pip')]",
+
+    "pipDns1": "[concat('labvm1', uniqueString(resourceGroup().id))]",
+    "pipDns2": "[concat('labvm2', uniqueString(resourceGroup().id))]",
+    "pipDns3": "[concat('labvm3', uniqueString(resourceGroup().id))]",
+    "pipDns4": "[concat('labvm4', uniqueString(resourceGroup().id))]",
+
+    "osDisk1": "prtgcore01-osdisk",
+    "osDisk2": "remoteprobe01-osdisk",
+    "osDisk3": "multiplatformprobe-osdisk",
+    "osDisk4": "prtgcore02-osdisk"
+  },
+  "resources": [
+
+    {
+      "apiVersion": "2016-09-01",
+      "name": "pid-e843308b-3ce2-42a2-b743-2f21b36a5e68",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": []
+        }
+      }
+    },
+
+    {
+      "type": "Microsoft.Network/publicIpAddresses",
+      "apiVersion": "2020-08-01",
+      "name": "[variables('pip1')]",
+      "location": "[variables('location')]",
+      "sku": { "name": "Standard", "tier": "Regional" },
+      "properties": {
+        "publicIpAllocationMethod": "Static",
+        "dnsSettings": { "domainNameLabel": "[variables('pipDns1')]" }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2020-05-01",
+      "name": "[variables('nsg1')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "securityRules": [
+          { "name": "default-allow-rdp",   "properties": { "priority": 110, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "3389" } },
+          { "name": "default-allow-http",  "properties": { "priority": 120, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "80"   } },
+          { "name": "default-allow-https", "properties": { "priority": 130, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "443"  } }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2022-11-01",
+      "name": "[variables('nic1')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIpAddresses/', variables('pip1'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsg1'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": { "id": "[variables('subnetRef')]" },
+              "privateIPAllocationMethod": "Dynamic",
+              "privateIPAddress": "10.0.0.4",
+              "publicIpAddress": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('pip1'))]" }
+            }
+          }
+        ],
+        "networkSecurityGroup": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('nsg1'))]" }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2024-03-01",
+      "name": "[variables('vm1Name')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nic1'))]"
+      ],
+      "properties": {
+        "hardwareProfile": { "vmSize": "[variables('windowsVMSize')]" },
+        "storageProfile": {
+          "osDisk": {
+            "createOption": "FromImage",
+            "name": "[variables('osDisk1')]",
+            "caching": "ReadWrite",
+            "managedDisk": { "storageAccountType": "[variables('diskType')]" },
+            "diskSizeGB": 128
+          },
+          "imageReference": { "id": "[parameters('vm1ImageId')]" }
+        },
+        "osProfile": {
+          "computerName": "prtgcore01",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminUserPassword')]"
+        },
+        "networkProfile": {
+          "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic1'))]" } ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vm1Name'), '/winExtension')]",
+      "apiVersion": "2015-06-15",
+      "location": "[variables('location')]",
+      "dependsOn": [ "[concat('Microsoft.Compute/virtualMachines/', variables('vm1Name'))]" ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": [
+            "https://experienceazure.blob.core.windows.net/templates/paessler/win2025/generalized-vm/psscript.ps1",
+            "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
+          ]
+        },
+        "protectedSettings": {
+          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/win2025/generalized-vm/psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'), ' -ComputerName prtgcore01')]"
+        }
+      }
+    },
+
+    {
+      "type": "Microsoft.Network/publicIpAddresses",
+      "apiVersion": "2020-08-01",
+      "name": "[variables('pip2')]",
+      "location": "[variables('location')]",
+      "sku": { "name": "Standard", "tier": "Regional" },
+      "properties": {
+        "publicIpAllocationMethod": "Static",
+        "dnsSettings": { "domainNameLabel": "[variables('pipDns2')]" }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2020-05-01",
+      "name": "[variables('nsg2')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "securityRules": [
+          { "name": "default-allow-rdp",   "properties": { "priority": 110, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "3389" } },
+          { "name": "default-allow-http",  "properties": { "priority": 120, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "80"   } },
+          { "name": "default-allow-https", "properties": { "priority": 130, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "443"  } }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2022-11-01",
+      "name": "[variables('nic2')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIpAddresses/', variables('pip2'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsg2'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": { "id": "[variables('subnetRef')]" },
+              "privateIPAllocationMethod": "Dynamic",
+              "privateIPAddress": "10.0.0.5",
+              "publicIpAddress": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('pip2'))]" }
+            }
+          }
+        ],
+        "networkSecurityGroup": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('nsg2'))]" }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2024-03-01",
+      "name": "[variables('vm2Name')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nic2'))]"
+      ],
+      "properties": {
+        "hardwareProfile": { "vmSize": "[variables('windowsVMSize')]" },
+        "storageProfile": {
+          "osDisk": {
+            "createOption": "FromImage",
+            "name": "[variables('osDisk2')]",
+            "caching": "ReadWrite",
+            "managedDisk": { "storageAccountType": "[variables('diskType')]" },
+            "diskSizeGB": 128
+          },
+          "imageReference": { "id": "[parameters('vm2ImageId')]" }
+        },
+        "osProfile": {
+          "computerName": "remoteprobe01",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminUserPassword')]"
+        },
+        "networkProfile": {
+          "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic2'))]" } ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vm2Name'), '/winExtension')]",
+      "apiVersion": "2015-06-15",
+      "location": "[variables('location')]",
+      "dependsOn": [ "[concat('Microsoft.Compute/virtualMachines/', variables('vm2Name'))]" ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": [
+            "https://experienceazure.blob.core.windows.net/templates/paessler/win2025/generalized-vm/psscript.ps1",
+            "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
+          ]
+        },
+        "protectedSettings": {
+          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/win2025/generalized-vm/psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'), ' -ComputerName remoteprobe01')]"
+        }
+      }
+    },
+
+    {
+      "type": "Microsoft.Network/publicIpAddresses",
+      "apiVersion": "2020-08-01",
+      "name": "[variables('pip3')]",
+      "location": "[variables('location')]",
+      "sku": { "name": "Standard", "tier": "Regional" },
+      "properties": {
+        "publicIpAllocationMethod": "Static",
+        "dnsSettings": { "domainNameLabel": "[variables('pipDns3')]" }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2020-05-01",
+      "name": "[variables('nsg3')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "securityRules": [
+          { "name": "default-allow-ssh",   "properties": { "priority": 110, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "22"  } },
+          { "name": "default-allow-http",  "properties": { "priority": 120, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "80"  } },
+          { "name": "default-allow-https", "properties": { "priority": 130, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "443" } }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2022-11-01",
+      "name": "[variables('nic3')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIpAddresses/', variables('pip3'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsg3'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": { "id": "[variables('subnetRef')]" },
+              "privateIPAllocationMethod": "Dynamic",
+              "privateIPAddress": "10.0.0.6",
+              "publicIpAddress": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('pip3'))]" }
+            }
+          }
+        ],
+        "networkSecurityGroup": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('nsg3'))]" }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2024-03-01",
+      "name": "[variables('vm3Name')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nic3'))]"
+      ],
+      "properties": {
+        "hardwareProfile": { "vmSize": "[variables('ubuntuVMSize')]" },
+        "storageProfile": {
+          "osDisk": {
+            "createOption": "FromImage",
+            "name": "[variables('osDisk3')]",
+            "caching": "ReadWrite",
+            "managedDisk": { "storageAccountType": "[variables('diskType')]" },
+            "diskSizeGB": 128
+          },
+          "imageReference": { "id": "[parameters('vm3ImageId')]" }
+        },
+        "osProfile": {
+          "computerName": "multiplatformprobe",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminUserPassword')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": false,
+            "patchSettings": { "patchMode": "ImageDefault" }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic3'))]" } ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vm3Name'), '/linuxExtension')]",
+      "apiVersion": "2021-07-01",
+      "location": "[variables('location')]",
+      "dependsOn": [ "[concat('Microsoft.Compute/virtualMachines/', variables('vm3Name'))]" ],
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.1",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": [
+            "https://experienceazure.blob.core.windows.net/templates/paessler/linux/linuxscript.sh"
+          ]
+        },
+        "protectedSettings": {
+          "commandToExecute": "bash linuxscript.sh"
+        }
+      }
+    },
+
+    {
+      "type": "Microsoft.Network/publicIpAddresses",
+      "apiVersion": "2020-08-01",
+      "name": "[variables('pip4')]",
+      "location": "[variables('location')]",
+      "sku": { "name": "Standard", "tier": "Regional" },
+      "properties": {
+        "publicIpAllocationMethod": "Static",
+        "dnsSettings": { "domainNameLabel": "[variables('pipDns4')]" }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2020-05-01",
+      "name": "[variables('nsg4')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "securityRules": [
+          { "name": "default-allow-rdp",   "properties": { "priority": 110, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "3389" } },
+          { "name": "default-allow-http",  "properties": { "priority": 120, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "80"   } },
+          { "name": "default-allow-https", "properties": { "priority": 130, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "443"  } }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2022-11-01",
+      "name": "[variables('nic4')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIpAddresses/', variables('pip4'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsg4'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": { "id": "[variables('subnetRef')]" },
+              "privateIPAllocationMethod": "Dynamic",
+              "privateIPAddress": "10.0.0.7",
+              "publicIpAddress": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('pip4'))]" }
+            }
+          }
+        ],
+        "networkSecurityGroup": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('nsg4'))]" }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2024-03-01",
+      "name": "[variables('vm4Name')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nic4'))]"
+      ],
+      "properties": {
+        "hardwareProfile": { "vmSize": "[variables('windowsVMSize')]" },
+        "storageProfile": {
+          "osDisk": {
+            "createOption": "FromImage",
+            "name": "[variables('osDisk4')]",
+            "caching": "ReadWrite",
+            "managedDisk": { "storageAccountType": "[variables('diskType')]" },
+            "diskSizeGB": 128
+          },
+          "imageReference": { "id": "[parameters('vm4ImageId')]" }
+        },
+        "osProfile": {
+          "computerName": "prtgcore02",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminUserPassword')]"
+        },
+        "networkProfile": {
+          "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic4'))]" } ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vm4Name'), '/winExtension')]",
+      "apiVersion": "2015-06-15",
+      "location": "[variables('location')]",
+      "dependsOn": [ "[concat('Microsoft.Compute/virtualMachines/', variables('vm4Name'))]" ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": [
+            "https://experienceazure.blob.core.windows.net/templates/paessler/win2025/generalized-vm/psscript.ps1",
+            "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
+          ]
+        },
+        "protectedSettings": {
+          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/win2025/generalized-vm/psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'), ' -ComputerName prtgcore02')]"
+        }
+      }
+    }
+
+  ],
+  "outputs": {
+    "Deployment ID": {
+      "type": "String",
+      "value": "[parameters('DeploymentID')]"
+    },
+    "VM1 PRTG Core 01 DNS Name": {
+      "type": "String",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip1'))).dnsSettings.fqdn]"
+    },
+    "VM1 Admin Username": {
+      "type": "String",
+      "value": "[parameters('adminUsername')]"
+    },
+    "VM1 Admin Password": {
+      "type": "String",
+      "value": "[parameters('resetUserPassword')]"
+    },
+    "VM1 Private IP": {
+      "type": "String",
+      "value": "[reference(concat('Microsoft.Network/networkInterfaces/', variables('nic1'))).ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "VM2 Remote Probe 01 DNS Name": {
+      "type": "String",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip2'))).dnsSettings.fqdn]"
+    },
+    "VM2 Admin Username": {
+      "type": "String",
+      "value": "[parameters('adminUsername')]"
+    },
+    "VM2 Admin Password": {
+      "type": "String",
+      "value": "[parameters('resetUserPassword')]"
+    },
+    "VM2 Private IP": {
+      "type": "String",
+      "value": "[reference(concat('Microsoft.Network/networkInterfaces/', variables('nic2'))).ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "VM3 Multi-Platform Probe DNS Name": {
+      "type": "String",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip3'))).dnsSettings.fqdn]"
+    },
+    "VM3 Admin Username": {
+      "type": "String",
+      "value": "[parameters('adminUsername')]"
+    },
+    "VM3 Admin Password": {
+      "type": "String",
+      "value": "[parameters('resetUserPassword')]"
+    },
+    "VM3 Private IP": {
+      "type": "String",
+      "value": "[reference(concat('Microsoft.Network/networkInterfaces/', variables('nic3'))).ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "VM4 PRTG Core 02 DNS Name": {
+      "type": "String",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip4'))).dnsSettings.fqdn]"
+    },
+    "VM4 Admin Username": {
+      "type": "String",
+      "value": "[parameters('adminUsername')]"
+    },
+    "VM4 Admin Password": {
+      "type": "String",
+      "value": "[parameters('resetUserPassword')]"
+    },
+    "VM4 Private IP": {
+      "type": "String",
+      "value": "[reference(concat('Microsoft.Network/networkInterfaces/', variables('nic4'))).ipConfigurations[0].properties.privateIPAddress]"
     }
   }
 }
