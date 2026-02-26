@@ -163,13 +163,26 @@ if ($ComputerName) {
 # 2. Create 'training' user using resetUserPassword passed from ARM and add to Administrators
 $trainingPassword = ConvertTo-SecureString $resetUserPassword -AsPlainText -Force
 if (-not (Get-LocalUser -Name "training" -ErrorAction SilentlyContinue)) {
-    New-LocalUser -Name "training" -Password $trainingPassword -FullName "Training" -PasswordNeverExpires -ErrorAction SilentlyContinue
+    New-LocalUser -Name "training" -Password $trainingPassword -FullName "training" -PasswordNeverExpires -ErrorAction SilentlyContinue
     Write-Host "User 'training' created"
 } else {
-    Set-LocalUser -Name "training" -Password $trainingPassword
-    Write-Host "User 'training' already exists - password updated"
+    Set-LocalUser -Name "training" -Password $trainingPassword -FullName "training"
+    Write-Host "User 'training' already exists - password and fullname updated"
 }
 Add-LocalGroupMember -Group "Administrators" -Member "training" -ErrorAction SilentlyContinue
+# 2a. Apply wallpaper system-wide via PersonalizationCSP (applies to all users including training)
+$wallpaperPath = "C:\Windows\Web\Wallpaper\Paessler\paessler-wallpaper.jpg"
+if (Test-Path $wallpaperPath) {
+    $regPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP"
+    New-Item -Path $regPath -Force | Out-Null
+    New-ItemProperty -Path $regPath -Name "DesktopImagePath"   -Value $wallpaperPath -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $regPath -Name "DesktopImageUrl"    -Value $wallpaperPath -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $regPath -Name "DesktopImageStatus" -Value 1 -PropertyType DWord -Force | Out-Null
+    Write-Host "Wallpaper set via PersonalizationCSP"
+} else {
+    Write-Host "WARNING: Wallpaper file not found at $wallpaperPath - skipping"
+}
+
 
 # 3. Delete 'labuser' only after training user is confirmed active
 $trainingExists = Get-LocalUser -Name "training" -ErrorAction SilentlyContinue
