@@ -166,11 +166,11 @@
             "properties": {
               "subnet": { "id": "[variables('subnetRef')]" },
               "privateIPAllocationMethod": "Dynamic",
-              "publicIpAddress": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('pip1'))]" }
+              "publicIpAddress": { "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('pip1'))]" }
             }
           }
         ],
-        "networkSecurityGroup": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('nsg1'))]" }
+        "networkSecurityGroup": { "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg1'))]" }
       }
     },
     {
@@ -196,7 +196,8 @@
         "osProfile": {
           "computerName": "prtgcore01",
           "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminUserPassword')]"
+          "adminPassword": "[parameters('adminUserPassword')]",
+          "windowsConfiguration": { "provisionVmAgent": true }
         },
         "networkProfile": {
           "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic1'))]" } ]
@@ -267,11 +268,11 @@
             "properties": {
               "subnet": { "id": "[variables('subnetRef')]" },
               "privateIPAllocationMethod": "Dynamic",
-              "publicIpAddress": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('pip2'))]" }
+              "publicIpAddress": { "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('pip2'))]" }
             }
           }
         ],
-        "networkSecurityGroup": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('nsg2'))]" }
+        "networkSecurityGroup": { "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg2'))]" }
       }
     },
     {
@@ -293,11 +294,6 @@
             "diskSizeGB": 128
           },
           "imageReference": { "id": "[parameters('vm2ImageId')]" }
-        },
-        "osProfile": {
-          "computerName": "remoteprobe01",
-          "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminUserPassword')]"
         },
         "networkProfile": {
           "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic2'))]" } ]
@@ -368,11 +364,11 @@
             "properties": {
               "subnet": { "id": "[variables('subnetRef')]" },
               "privateIPAllocationMethod": "Dynamic",
-              "publicIpAddress": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('pip3'))]" }
+              "publicIpAddress": { "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('pip3'))]" }
             }
           }
         ],
-        "networkSecurityGroup": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('nsg3'))]" }
+        "networkSecurityGroup": { "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg3'))]" }
       }
     },
     {
@@ -472,11 +468,11 @@
             "properties": {
               "subnet": { "id": "[variables('subnetRef')]" },
               "privateIPAllocationMethod": "Dynamic",
-              "publicIpAddress": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('pip4'))]" }
+              "publicIpAddress": { "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('pip4'))]" }
             }
           }
         ],
-        "networkSecurityGroup": { "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('nsg4'))]" }
+        "networkSecurityGroup": { "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg4'))]" }
       }
     },
     {
@@ -502,7 +498,8 @@
         "osProfile": {
           "computerName": "prtgcore02",
           "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminUserPassword')]"
+          "adminPassword": "[parameters('adminUserPassword')]",
+          "windowsConfiguration": { "provisionVmAgent": true }
         },
         "networkProfile": {
           "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic4'))]" } ]
