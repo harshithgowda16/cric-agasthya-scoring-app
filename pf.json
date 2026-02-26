@@ -757,7 +757,7 @@
     },
     "VM1 Admin Username": {
       "type": "String",
-      "value": "[variables('adminUsername')]"
+      "value": "training"
     },
     "VM1 Admin Password": {
       "type": "String",
@@ -773,7 +773,7 @@
     },
     "VM2 Admin Username": {
       "type": "String",
-      "value": "[variables('adminUsername')]"
+      "value": "training"
     },
     "VM2 Admin Password": {
       "type": "String",
@@ -789,7 +789,7 @@
     },
     "VM3 Admin Username": {
       "type": "String",
-      "value": "[variables('adminUsername')]"
+      "value": "training"
     },
     "VM3 Admin Password": {
       "type": "String",
@@ -805,7 +805,7 @@
     },
     "VM4 Admin Username": {
       "type": "String",
-      "value": "[variables('adminUsername')]"
+      "value": "training"
     },
     "VM4 Admin Password": {
       "type": "String",
