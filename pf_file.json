@@ -2,83 +2,23 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "vmNamePefix": {
-            "value": "LabVM"
+        "adminUsername": {
+            "value": "labuser"
         },
-        "virtualMachineSize": {
-            "value": "GET-VM-SIZE"
-        },
-        "vmImageType": {
-            "value": "GET-VM-IMAGE-TYPE"
-        },
-        "vmCustomImageOsState": {
-            "value": "GET-VM-CUSTOM-IMAGE-OS-STATE"
-        },
-        "vmCustomImageResourceID": {
-            "value": "GET-VM-CUSTOM-IMAGE-RESOURCE-ID"
-        },
-        "vmMarketplaceImageSku": {
-            "value": "GET-VM-MARKETPLACE-IMAGE-SKU"
-        },
-        "vmMarketplaceImageOffer": {
-            "value": "GET-VM-MARKETPLACE-IMAGE-OFFER"
-        },
-        "vmMarketplaceImagePublisher": {
-            "value": "GET-VM-MARKETPLACE-IMAGE-PUBLISHER"
-        },
-        "imagePlanRequired": {
-            "value": "USE-MARKETPLACE-IMAGE-PLAN"
-        },
-        "imagePlanName": {
-            "value": "GET-VM-MARKETPLACE-IMAGE-PLAN"
-        },
-        "imagePlanPublisher": {
-            "value": "GET-VM-MARKETPLACE-IMAGE-PUBLISHER"
-        },
-        "imagePlanProduct": {
-            "value": "GET-VM-MARKETPLACE-IMAGE-OFFER"
-        },
-        "useSamePasswordOrNot": {
-            "value": "USE-SAME-VM-PASSWORD-FOR-ALL"
-        },
-        "genAdminPassword": {
+        "adminPassword": {
             "value": "GEN-PASSWORD"
         },
-        "vmAdminUserName": {
-            "value": "GET-VM-USERNAME"
+        "PRTGRTVMadminPassword": {
+            "value": "PRTG4training"
         },
-        "vmAdminPassword": {
-            "value": "GET-VM-PASSWORD"
+        "AzureUserName": {
+            "value": "GET-AZUSER-UPN"
         },
-        "virtualNetworkNewOrExisting": {
-            "value": "GET-VNET-CONFIG"
+        "AzurePassword": {
+            "value": "GET-AZUSER-PASSWORD"
         },
-        "existingVirtualNetworkName": {
-            "value": "GET-EXISTING-VNET-NAME"
-        },
-        "existingVnetSubnetName": {
-            "value": "GET-EXISTING-VNET-SUBNET"
-        },
-        "existingVnetResourceGroupName": {
-            "value": "GET-EXISTING-VNET-RG"
-        },
-        "vmOSDiskSizeGB": {
-            "value": "GET-VM-DISK-SIZE"
-        },
-        "vmOsDiskType": {
-            "value": "GET-VM-DISK-TYPE"
-        },
-        "provisionNonAdminUser": {
-            "value": "ENABLE-NONADMIN-VM-ACCOUNT"
-        },
-        "vmNonAdminUserName": {
-            "value": "GET-NONADMIN-VM-USERNAME"
-        },
-        "vmNonAdminPassword": {
-            "value": "GET-NONADMIN-VM-PASSWORD"
-        },
-        "genNonAdminPassword": {
-            "value": "GEN-PASSWORD"
+        "ODLID": {
+            "value": "GET-ODL-ID"
         },
         "DeploymentID": {
             "value": "GET-DEPLOYMENT-ID"
@@ -87,14 +27,19 @@
             "value": "trainer"
         },
         "trainerUserPassword": {
-            "value": "GEN-PASSWORD"
+            "value": "Password.1!!"
         },
-        "vmSecurityType": {
-            "value": "GET-VM-CUSTOM-IMAGE-SECURITY-TYPE"
+        "vm1ImageId": {
+            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025/versions/0.0.1"
         },
-        "ODLname": {
-            "value": ",>|?""]{}()*&#!\:lab"
+        "vm2ImageId": {
+            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025/versions/0.0.1"
+        },
+        "vm3ImageId": {
+            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025/versions/0.0.1"
+        },
+        "vm4ImageId": {
+            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025/versions/0.0.1"
         }
     }
 }
-
