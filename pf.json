@@ -6,7 +6,7 @@
       "type": "string",
       "defaultValue": "labuser"
     },
-    "adminUserPassword": {
+    "adminPassword": {
       "type": "securestring",
       "minLength": 12,
       "metadata": {
@@ -251,7 +251,7 @@
         "osProfile": {
           "computerName": "prtgcore01",
           "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminUserPassword')]",
+          "adminPassword": "[parameters('adminPassword')]",
           "windowsConfiguration": {
             "provisionVmAgent": true
           }
@@ -567,7 +567,7 @@
         "osProfile": {
           "computerName": "multiplatformprobe",
           "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminUserPassword')]",
+          "adminPassword": "[parameters('adminPassword')]",
           "linuxConfiguration": {
             "disablePasswordAuthentication": false,
             "patchSettings": {
@@ -731,7 +731,7 @@
         "osProfile": {
           "computerName": "prtgcore02",
           "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminUserPassword')]",
+          "adminPassword": "[parameters('adminPassword')]",
           "windowsConfiguration": {
             "provisionVmAgent": true
           }
