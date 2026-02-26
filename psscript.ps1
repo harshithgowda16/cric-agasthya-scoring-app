@@ -1,260 +1,177 @@
-param (
-    [string]$AzureUserName,
-    [string]$AzurePassword,
-    [string]$AzureTenantID,
-    [string]$AzureSubscriptionID,
-    [string]$ODLID,
-    [string]$InstallCloudLabsShadow,
-    [string]$vmAdminUsername,
-    [string]$trainerUserName,
-    [string]$trainerUserPassword,
-    [string]$AWSAccessKey,
-    [string]$AWSSecretKey,
-    [string]$AWSRegion,
-    [string]$AWSAccountId,
-    [string]$VMAdminUsername,
-    [string]$VMAdminPassword,
-    [string]$VMDNSName
+Param (
+    [Parameter(Mandatory = $true)]
+    [string]
+    $AzureUserName,
+
+    [string]
+    $AzurePassword,
+
+    [string]
+    $AzureTenantID,
+
+    [string]
+    $AzureSubscriptionID,
+
+    [string]
+    $ODLID,
+
+    [string]
+    $DeploymentID,
+
+    [string]
+    $InstallCloudLabsShadow,
+
+    [string]
+    $vmAdminUsername,
+
+    [string]
+    $trainerUserName,
+
+    [string]
+    $trainerUserPassword,
+
+    [string]
+    $resetUserPassword,
+
+    [string]
+    $ComputerName
+
 )
 
-Start-Transcript -Path C:\WindowsAzure\Logs\CloudLabsCustomScriptExtension.txt -Append
+Start-Transcript -Path C:\WindowsAzure\Logs\CLCustomScriptExtension.txt -Append
 [Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls
 [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls" 
 
-#Import Common Functions
+# Create temp directory if it doesn't exist
+if (!(Test-Path C:\temp)) { New-Item -ItemType Directory -Path C:\temp }
+
+# Export current security policy
+secedit /export /cfg C:\temp\secpol.cfg
+
+# Disable the password complexity setting
+(Get-Content C:\temp\secpol.cfg) -replace 'PasswordComplexity = 1', 'PasswordComplexity = 0' | Set-Content C:\temp\secpol.cfg
+
+# Apply the modified policy
+secedit /configure /db C:\temp\secedit.sdb /cfg C:\temp\secpol.cfg
+
+# Force immediate policy update
+gpupdate /force
+
+# Convert plain-text password to SecureString
+$resetSecurePassword = ConvertTo-SecureString $resetUserPassword -AsPlainText -Force
+
+# Apply the password to the local user
+Set-LocalUser -Name $vmAdminUsername -Password $resetSecurePassword
+
+# Export current security policy (this will show PasswordComplexity = 0)
+secedit /export /cfg C:\temp\secpol.cfg
+
+# Change PasswordComplexity from 0 to 1 (enable complexity)
+(Get-Content C:\temp\secpol.cfg) -replace 'PasswordComplexity = 0', 'PasswordComplexity = 1' | Set-Content C:\temp\secpol.cfg
+
+# Apply the modified policy
+secedit /configure /db C:\temp\secedit.sdb /cfg C:\temp\secpol.cfg
+
+# Force immediate policy update
+gpupdate /force
+
+# Clean up temporary files
+Remove-Item C:\temp\secpol.cfg, C:\temp\secedit.sdb, C:\temp\secedit.jfm -ErrorAction SilentlyContinue
+
+# Remove the temp directory if it exists
+Remove-Item C:\temp -Recurse -Force -ErrorAction SilentlyContinue
+
+# Import Common Functions
 $path = pwd
-$path=$path.Path
+$path = $path.Path
 $commonscriptpath = "$path" + "\cloudlabs-common\cloudlabs-windows-functions.ps1"
 . $commonscriptpath
 
 # Run Imported functions from cloudlabs-windows-functions.ps1
-WindowsServerCommon
+Disable-InternetExplorerESC
+Enable-IEFileDownload
+Enable-CopyPageContent-In-InternetExplorer
+InstallChocolatey
+DisableServerMgrNetworkPopup
+CreateLabFilesDirectory
+DisableWindowsFirewall
+
 InstallCloudLabsShadow $ODLID $InstallCloudLabsShadow
-CreateCredFile $AzureUserName $AzurePassword $AzureTenantID $AzureSubscriptionID $ODLID
 
-Enable-CloudLabsEmbeddedShadow $vmAdminUsername $trainerUserName $trainerUserPassword
+Remove-Item -Path "C:\Users\Public\Desktop\Azure Portal.lnk" -ErrorAction SilentlyContinue
 
-# ========== CREATE COMBINED CREDENTIAL FILE ==========
-Write-Host "Creating combined CloudLabs credentials file..." -ForegroundColor Green
+Function Enable-CloudLabsEmbeddedShadow($vmAdminUsername, $trainerUserName, $trainerUserPassword)
+{
+    Write-Host "Enabling CloudLabsEmbeddedShadow"
+    $trainerUserPass = $trainerUserPassword | ConvertTo-SecureString -AsPlainText -Force
 
-# Create directories
-New-Item -ItemType directory -Path C:\LabFiles -Force | Out-Null
-New-Item -ItemType directory -Path C:\ProgramData\CloudLabs -Force | Out-Null
+    New-LocalUser -Name $trainerUserName -Password $trainerUserPass -FullName "$trainerUserName" -Description "CloudLabs EmbeddedShadow User" -PasswordNeverExpires
+    Add-LocalGroupMember -Group "Administrators" -Member "$trainerUserName"
 
-# Download the template credential file from GitHub
-$WebClient = New-Object System.Net.WebClient
-$credsTemplateUrl = "https://raw.githubusercontent.com/harshithgowda16/cric-agasthya-scoring-app/refs/heads/main/CloudLabs-Creds.txt"
-$credsFile = "C:\ProgramData\CloudLabs\CloudLabs-Creds.txt"
+    reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v Shadow /t REG_DWORD /d 2 -f
 
-try {
-    $WebClient.DownloadFile($credsTemplateUrl, $credsFile)
-    Write-Host "✅ Downloaded credential template from GitHub" -ForegroundColor Green
-} catch {
-    Write-Host "⚠️ Failed to download template, creating from scratch..." -ForegroundColor Yellow
-    # Create basic template if download fails
-    @"
-================================================================
-                CLOUDLABS CREDENTIALS
-================================================================
-Generated on: __DATE__
-Deployment ID: __DEPLOYMENT_ID__
+    $drivepath = "C:\Users\Public\Documents"
+    $WebClient = New-Object System.Net.WebClient
+    $WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/paessler/win2025/updated/shadow.ps1","$drivepath\Shadow.ps1")
+    $WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/shadow.xml","$drivepath\shadow.xml")
+    $WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/ShadowSession.zip","C:\Packages\ShadowSession.zip")
+    $WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/executetaskscheduler.ps1","$drivepath\executetaskscheduler.ps1")
+    $WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/shadowshortcut.ps1","$drivepath\shadowshortcut.ps1")
 
-----------------------------------------------------------------
-                   AZURE CREDENTIALS
-----------------------------------------------------------------
-🔹 Azure Username (UPN)      : __AZURE_USERNAME__
-🔹 Azure Password            : __AZURE_PASSWORD__
-🔹 Azure Tenant ID           : __AZURE_TENANT_ID__
-🔹 Azure Subscription ID     : __AZURE_SUBSCRIPTION_ID__
-🔹 Azure Tenant Domain       : __AZURE_TENANT_DOMAIN__
+    (Get-Content -Path "$drivepath\Shadow.ps1") | ForEach-Object {$_ -Replace "vmAdminUsernameValue", "$vmAdminUsername"} | Set-Content -Path "$drivepath\Shadow.ps1"
+    (Get-Content -Path "$drivepath\shadow.xml") | ForEach-Object {$_ -Replace "vmAdminUsernameValue", "$trainerUserName"} | Set-Content -Path "$drivepath\shadow.xml"
+    (Get-Content -Path "$drivepath\shadow.xml") | ForEach-Object {$_ -Replace "ComputerNameValue", "$($env:ComputerName)"} | Set-Content -Path "$drivepath\shadow.xml"
+    (Get-Content -Path "$drivepath\shadowshortcut.ps1") | ForEach-Object {$_ -Replace "vmAdminUsernameValue", "$trainerUserName"} | Set-Content -Path "$drivepath\shadowshortcut.ps1"
+    sleep 2
 
-----------------------------------------------------------------
-                    AWS CREDENTIALS
-----------------------------------------------------------------
-🔹 AWS Account ID            : __AWS_ACCOUNT_ID__
-🔹 AWS Region                : __AWS_REGION__
-🔹 AWS Access Key ID         : __AWS_ACCESS_KEY__
-🔹 AWS Secret Access Key     : __AWS_SECRET_KEY__
+    schtasks.exe /Create /XML $drivepath\shadow.xml /tn Shadowtask
 
-----------------------------------------------------------------
-              CONNECTION INFORMATION
-----------------------------------------------------------------
-🔹 VM Admin Username         : __VM_ADMIN_USERNAME__
-🔹 VM Admin Password         : __VM_ADMIN_PASSWORD__
-🔹 VM DNS Name               : __VM_DNS_NAME__
-
-================================================================
-        Save this file securely - Contains sensitive credentials
-================================================================
-"@ | Out-File -FilePath $credsFile -Encoding UTF8 -Force
+    $Trigger = New-ScheduledTaskTrigger -AtLogOn
+    $User = "$($env:ComputerName)\$trainerUserName"
+    $Action = New-ScheduledTaskAction -Execute "C:\Windows\System32\WindowsPowerShell\v1.0\Powershell.exe" -Argument "-executionPolicy Unrestricted -File $drivepath\shadowshortcut.ps1 -WindowStyle Hidden"
+    Register-ScheduledTask -TaskName "shadowshortcut" -Trigger $Trigger -User $User -Action $Action -RunLevel Highest -Force
 }
 
-# Get current date
-$currentDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+# Disable the privacy consent screen during OOBE
+New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\OOBE" -Force | Out-Null
+New-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\OOBE" -Name "DisablePrivacyExperience" -PropertyType DWord -Value 1 -Force
 
-# Replace placeholders with actual values
-Write-Host "📝 Populating credentials file with values..." -ForegroundColor Yellow
-(Get-Content -Path $credsFile) | ForEach-Object {
-    $_ -replace "__DATE__", "$currentDate" `
-       -replace "__DEPLOYMENT_ID__", "$ODLID" `
-       -replace "__AZURE_USERNAME__", "$AzureUserName" `
-       -replace "__AZURE_PASSWORD__", "$AzurePassword" `
-       -replace "__AZURE_TENANT_ID__", "$AzureTenantID" `
-       -replace "__AZURE_SUBSCRIPTION_ID__", "$AzureSubscriptionID" `
-       -replace "__AZURE_TENANT_DOMAIN__", "onmicrosoft.com" `
-       -replace "__AWS_ACCOUNT_ID__", "$AWSAccountId" `
-       -replace "__AWS_REGION__", "$AWSRegion" `
-       -replace "__AWS_ACCESS_KEY__", "$AWSAccessKey" `
-       -replace "__AWS_SECRET_KEY__", "$AWSSecretKey" `
-       -replace "__VM_ADMIN_USERNAME__", "$VMAdminUsername" `
-       -replace "__VM_ADMIN_PASSWORD__", "$VMAdminPassword" `
-       -replace "__VM_DNS_NAME__", "$VMDNSName"
-} | Set-Content -Path $credsFile
+# Set minimum diagnostic data level
+New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" -Force | Out-Null
+New-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" -Name "AllowTelemetry" -PropertyType DWord -Value 0 -Force
 
-Write-Host "✅ Credential file created at: $credsFile" -ForegroundColor Green
+# Set timezone
+Set-TimeZone -Name "W. Europe Standard Time"
 
-# Copy to LabFiles and Desktop for easy access
-Copy-Item $credsFile -Destination "C:\LabFiles\CloudLabs-Creds.txt" -Force
-Copy-Item $credsFile -Destination "C:\Users\Public\Desktop\CloudLabs-Creds.txt" -Force
-Write-Host "✅ Credential file copied to LabFiles and Desktop" -ForegroundColor Green
+# Keyboard layout scheduled task
+$psCommand = 'PowerShell.exe -WindowStyle Hidden -ExecutionPolicy Bypass -Command "Set-WinUserLanguageList -LanguageList en-US, de-DE, fr-FR -Force"'
+$action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c start /min $psCommand"
+$trigger = New-ScheduledTaskTrigger -AtLogOn
+$principal = New-ScheduledTaskPrincipal -UserId "$env:COMPUTERNAME\$vmAdminUsername" -LogonType Interactive -RunLevel Highest
+Register-ScheduledTask -TaskName "SetKeyboardLanguages" -Action $action -Trigger $trigger -Principal $principal -Force
 
-# ========== DOWNLOAD AND CREATE LOGIN SCRIPT ==========
-$loginScriptUrl = "https://raw.githubusercontent.com/harshithgowda16/cric-agasthya-scoring-app/refs/heads/main/CloudLabs-Login.ps1"
-$loginScriptPath = "C:\ProgramData\CloudLabs\CloudLabs-Login.ps1"
+# =============================================================================
+# PAESSLER CUSTOMIZATION
+# =============================================================================
 
-try {
-    $WebClient.DownloadFile($loginScriptUrl, $loginScriptPath)
-    Write-Host "✅ Login script downloaded from GitHub" -ForegroundColor Green
-} catch {
-    Write-Host "❌ Failed to download login script" -ForegroundColor Red
+# 1. Rename Computer
+if ($ComputerName) {
+    Rename-Computer -NewName $ComputerName -Force -ErrorAction SilentlyContinue
+    Write-Host "Computer renamed to $ComputerName"
 }
 
-# Copy login script to accessible locations
-Copy-Item $loginScriptPath -Destination "C:\LabFiles\CloudLabs-Login.ps1" -Force
-Copy-Item $loginScriptPath -Destination "C:\Users\Public\Desktop\CloudLabs-Login.ps1" -Force
-Write-Host "✅ Login script copied to LabFiles and Desktop" -ForegroundColor Green
+# 2. Create 'training' user with password prtg4training and add to Administrators
+$trainingPassword = ConvertTo-SecureString "prtg4training" -AsPlainText -Force
+if (-not (Get-LocalUser -Name "training" -ErrorAction SilentlyContinue)) {
+    New-LocalUser -Name "training" -Password $trainingPassword -FullName "Training" -PasswordNeverExpires -ErrorAction SilentlyContinue
+    Write-Host "User 'training' created"
+}
+Add-LocalGroupMember -Group "Administrators" -Member "training" -ErrorAction SilentlyContinue
 
-# ========== CREATE DESKTOP SHORTCUTS ==========
-$WshShell = New-Object -ComObject WScript.Shell
-$PublicDesktop = "C:\Users\Public\Desktop"
-
-# Main login shortcut
-$shortcut = $WshShell.CreateShortcut("$PublicDesktop\CloudLabs Login.lnk")
-$shortcut.TargetPath = "powershell.exe"
-$shortcut.Arguments = "-ExecutionPolicy Bypass -NoExit -File C:\ProgramData\CloudLabs\CloudLabs-Login.ps1"
-$shortcut.Description = "Login to Azure and AWS"
-$shortcut.WorkingDirectory = "C:\ProgramData\CloudLabs"
-$shortcut.Save()
-Write-Host "✅ Created 'CloudLabs Login' shortcut on Desktop" -ForegroundColor Green
-
-# View credentials shortcut
-$credsShortcut = $WshShell.CreateShortcut("$PublicDesktop\View Credentials.lnk")
-$credsShortcut.TargetPath = "notepad.exe"
-$credsShortcut.Arguments = "C:\ProgramData\CloudLabs\CloudLabs-Creds.txt"
-$credsShortcut.Description = "View CloudLabs Credentials"
-$credsShortcut.Save()
-Write-Host "✅ Created 'View Credentials' shortcut on Desktop" -ForegroundColor Green
-
-# PowerShell shortcut for quick access
-$psShortcut = $WshShell.CreateShortcut("$PublicDesktop\PowerShell (Admin).lnk")
-$psShortcut.TargetPath = "powershell.exe"
-$psShortcut.Arguments = "-ExecutionPolicy Bypass"
-$psShortcut.Description = "Open PowerShell"
-$psShortcut.WorkingDirectory = "C:\ProgramData\CloudLabs"
-$psShortcut.Save()
-Write-Host "✅ Created 'PowerShell' shortcut on Desktop" -ForegroundColor Green
-
-Write-Host "✅ All desktop shortcuts created" -ForegroundColor Green
-
-# ========== CREATE README ==========
-$readme = @"
-========================================
-      CLOUDLABS ENVIRONMENT README
-========================================
-Deployment ID: $ODLID
-Generated on: $currentDate
-
-📁 IMPORTANT FILES LOCATIONS:
-   • Credentials: C:\ProgramData\CloudLabs\CloudLabs-Creds.txt
-   • Login Script: C:\ProgramData\CloudLabs\CloudLabs-Login.ps1
-   • Lab Files: C:\LabFiles\
-
-📌 DESKTOP SHORTCUTS:
-   1. "CloudLabs Login" - Automatically logs into Azure and AWS
-   2. "View Credentials" - Opens the credentials file
-   3. "PowerShell (Admin)" - Opens PowerShell for running commands
-
-🚀 TO LOGIN:
-   Double-click "CloudLabs Login" on desktop
-   This will automatically:
-   • Log you into Azure using Service Principal
-   • Configure AWS CLI with your credentials
-   • Verify both connections work
-
-📋 CREDENTIALS INCLUDED:
-   AZURE:
-   • Username: $AzureUserName
-   • Tenant ID: $AzureTenantID
-   • Subscription ID: $AzureSubscriptionID
-   
-   AWS:
-   • Account ID: $AWSAccountId
-   • Region: $AWSRegion
-   • Access Key: $($AWSAccessKey.Substring(0,5))********
-   
-   VM ACCESS:
-   • Admin Username: $VMAdminUsername
-   • DNS Name: $VMDNSName
-
-🔒 SECURITY NOTE:
-   • Credentials file is stored securely in C:\ProgramData
-   • Only Administrators can access this file
-   • You can delete the file after successful login:
-     Remove-Item C:\ProgramData\CloudLabs\CloudLabs-Creds.txt -Force
-
-🆘 TROUBLESHOOTING:
-   • If login fails, check the file exists: Test-Path C:\ProgramData\CloudLabs\CloudLabs-Creds.txt
-   • Run login script manually: & 'C:\ProgramData\CloudLabs\CloudLabs-Login.ps1'
-   • Check transcript: C:\WindowsAzure\Logs\CloudLabsCustomScriptExtension.txt
-
-========================================
-        READY TO START YOUR LAB!
-========================================
-"@
-
-$readme | Out-File -FilePath "C:\Users\Public\Desktop\README.txt" -Encoding UTF8 -Force
-Write-Host "✅ README file created on Desktop" -ForegroundColor Green
-
-# ========== VERIFY SETUP ==========
-Write-Host ""
-Write-Host "=========================================" -ForegroundColor Cyan
-Write-Host "         SETUP VERIFICATION" -ForegroundColor Cyan
-Write-Host "=========================================" -ForegroundColor Cyan
-Write-Host ""
-
-# Check if files exist
-$filesToCheck = @{
-    "Credentials File" = $credsFile
-    "Login Script" = $loginScriptPath
-    "README" = "C:\Users\Public\Desktop\README.txt"
+# 3. Delete 'labuser' if exists
+if (Get-LocalUser -Name "labuser" -ErrorAction SilentlyContinue) {
+    Remove-LocalUser -Name "labuser" -ErrorAction SilentlyContinue
+    Write-Host "User 'labuser' deleted"
 }
 
-foreach ($file in $filesToCheck.Keys) {
-    if (Test-Path $filesToCheck[$file]) {
-        Write-Host "✅ $file exists" -ForegroundColor Green
-    } else {
-        Write-Host "❌ $file missing" -ForegroundColor Red
-    }
-}
-
-Write-Host ""
-Write-Host "=========================================" -ForegroundColor Green
-Write-Host "🎯 SETUP COMPLETE!" -ForegroundColor Green
-Write-Host "=========================================" -ForegroundColor Green
-Write-Host ""
-Write-Host "👉 NEXT STEPS:" -ForegroundColor Yellow
-Write-Host "   1. RDP into the VM" -ForegroundColor White
-Write-Host "   2. Double-click 'CloudLabs Login' on Desktop" -ForegroundColor White
-Write-Host "   3. Wait for automatic Azure and AWS configuration" -ForegroundColor White
-Write-Host ""
-Write-Host "=========================================" -ForegroundColor Cyan
+Restart-Computer -Force
