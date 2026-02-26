@@ -160,11 +160,14 @@ if ($ComputerName) {
     Write-Host "Computer renamed to $ComputerName"
 }
 
-# 2. Create 'training' user with password prtg4training and add to Administrators
-$trainingPassword = ConvertTo-SecureString "prtg4training" -AsPlainText -Force
+# 2. Create 'training' user using resetUserPassword passed from ARM and add to Administrators
+$trainingPassword = ConvertTo-SecureString $resetUserPassword -AsPlainText -Force
 if (-not (Get-LocalUser -Name "training" -ErrorAction SilentlyContinue)) {
     New-LocalUser -Name "training" -Password $trainingPassword -FullName "Training" -PasswordNeverExpires -ErrorAction SilentlyContinue
     Write-Host "User 'training' created"
+} else {
+    Set-LocalUser -Name "training" -Password $trainingPassword
+    Write-Host "User 'training' already exists - password updated"
 }
 Add-LocalGroupMember -Group "Administrators" -Member "training" -ErrorAction SilentlyContinue
 
