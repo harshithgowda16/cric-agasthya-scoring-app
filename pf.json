@@ -421,6 +421,8 @@
   ],
   "outputs": {
     "Deployment ID": { "type": "String", "value": "[parameters('DeploymentID')]" },
+    "VM Username": { "type": "String", "value": "training" },
+    "VM Password": { "type": "String", "value": "[parameters('resetUserPassword')]" },
     "VM1 PRTG Core 01 DNS Name": { "type": "String", "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip1'))).dnsSettings.fqdn]" },
     "VM1 Admin Username": { "type": "String", "value": "training" },
     "VM1 Admin Password": { "type": "String", "value": "[parameters('resetUserPassword')]" },
