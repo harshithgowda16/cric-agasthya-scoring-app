@@ -5,9 +5,6 @@
         "adminUsername": {
             "value": "labuser"
         },
-        "adminUserPassword": {
-            "value": "GEN-UNIQUE-PASSWORD"
-        },
         "AzureUserName": {
             "value": "GET-AZUSER-UPN"
         },
@@ -43,6 +40,9 @@
         },
         "vm4ImageId": {
             "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/prtgcore02/versions/latest"
+        },
+        "adminPassword": {
+            "value": "GEN-UNIQUE-PASSWORD"
         }
     }
 }
