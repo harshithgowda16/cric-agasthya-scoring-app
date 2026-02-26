@@ -3,10 +3,10 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "adminUsername": {
-            "value": "training"
+            "value": "labuser"
         },
         "adminUserPassword": {
-            "value": "prtg4training"
+            "value": "GEN-UNIQUE-PASSWORD"
         },
         "AzureUserName": {
             "value": "GET-AZUSER-UPN"
