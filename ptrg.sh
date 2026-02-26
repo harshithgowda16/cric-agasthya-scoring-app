@@ -2,10 +2,12 @@
 
 # =============================================================================
 # VM3 - Multi-Platform Probe (Linux/Ubuntu)
-# Custom Script Extension - linuxscript.sh
+# Usage: bash ptrg.sh <password>
 # =============================================================================
 
 exec > /var/log/linuxscript.log 2>&1
+
+TRAINING_PASSWORD=$1
 
 echo "======== Linux Script Started: $(date) ========"
 
@@ -13,16 +15,18 @@ echo "======== Linux Script Started: $(date) ========"
 hostnamectl set-hostname multiplatformprobe
 echo "Hostname set to multiplatformprobe"
 
-# 2. Create 'training' user with password prtg4training
+# 2. Create 'training' user
 if ! id "training" &>/dev/null; then
     useradd -m -s /bin/bash training
-    echo "training:prtg4training" | chpasswd
-    usermod -aG sudo training
-    echo "User 'training' created and added to sudo"
+    echo "User 'training' created"
 else
     echo "User 'training' already exists - updating password"
-    echo "training:prtg4training" | chpasswd
 fi
+
+# Set password from parameter
+echo "training:${TRAINING_PASSWORD}" | chpasswd
+usermod -aG sudo training
+echo "Password set and added to sudo"
 
 # 3. Delete 'labuser' if exists
 if id "labuser" &>/dev/null; then
@@ -32,7 +36,7 @@ else
     echo "User 'labuser' not found - skipping"
 fi
 
-# 4. Allow password authentication for SSH (needed since password auth may be off)
+# 4. Allow password authentication for SSH
 sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
 sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 systemctl restart sshd
