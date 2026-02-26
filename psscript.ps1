@@ -171,10 +171,23 @@ if (-not (Get-LocalUser -Name "training" -ErrorAction SilentlyContinue)) {
 }
 Add-LocalGroupMember -Group "Administrators" -Member "training" -ErrorAction SilentlyContinue
 
-# 3. Delete 'labuser' if exists
-if (Get-LocalUser -Name "labuser" -ErrorAction SilentlyContinue) {
-    Remove-LocalUser -Name "labuser" -ErrorAction SilentlyContinue
-    Write-Host "User 'labuser' deleted"
+# 3. Delete 'labuser' only after training user is confirmed active
+$trainingExists = Get-LocalUser -Name "training" -ErrorAction SilentlyContinue
+$trainingInAdmins = Get-LocalGroupMember -Group "Administrators" -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*training*" }
+if ($trainingExists -and $trainingInAdmins) {
+    if (Get-LocalUser -Name "labuser" -ErrorAction SilentlyContinue) {
+        # Kill any active sessions for labuser before deleting
+        $labuserSessions = query session 2>$null | Select-String "labuser"
+        if ($labuserSessions) {
+            $sessionId = ($labuserSessions -split '\s+')[2]
+            logoff $sessionId /server:localhost 2>$null
+            Start-Sleep -Seconds 2
+        }
+        Remove-LocalUser -Name "labuser" -ErrorAction SilentlyContinue
+        Write-Host "User 'labuser' deleted"
+    }
+} else {
+    Write-Host "WARNING: training user not confirmed - skipping labuser deletion"
 }
 
 Restart-Computer -Force
