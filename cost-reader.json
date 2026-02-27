@@ -6,7 +6,6 @@
     "Microsoft.CostManagement/*/read",
     "Microsoft.Consumption/*/read",
 
-    // REQUIRED FOR COST PORTAL MENU
     "Microsoft.Resources/subscriptions/read",
     "Microsoft.Resources/subscriptions/resourceGroups/read",
     "Microsoft.Authorization/roleAssignments/read"
