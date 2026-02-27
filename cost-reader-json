@@ -1,0 +1,17 @@
+{
+  "Name": "Cost-Only-Reader-Locked",
+  "IsCustom": true,
+  "Description": "Provides ONLY cost and consumption read access. Blocks all resource groups, resources, Azure AD, subscription info, policies, VMs, storage, networking, and all other Azure service blades.",
+  "Actions": [
+    "Microsoft.CostManagement/*/read",
+    "Microsoft.Consumption/*/read"
+  ],
+  "NotActions": [
+    "*"
+  ],
+  "DataActions": [],
+  "NotDataActions": [],
+  "AssignableScopes": [
+    "[subscription().id]"
+  ]
+}
