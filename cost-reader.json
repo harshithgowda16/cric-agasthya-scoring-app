@@ -1,19 +1,30 @@
+ 
 {
-  "Name": "Cost-Only-Reader-Locked",
-  "IsCustom": true,
-  "Description": "Provides ONLY cost and consumption access. Minimal portal metadata permissions added so Cost Management is visible. All other Azure services remain blocked.",
-  "Actions": [
-    "Microsoft.CostManagement/*/read",
-    "Microsoft.Consumption/*/read",
-
-    "Microsoft.Resources/subscriptions/read",
-    "Microsoft.Resources/subscriptions/resourceGroups/read",
-    "Microsoft.Authorization/roleAssignments/read"
-  ],
-  "NotActions": [],
-  "DataActions": [],
-  "NotDataActions": [],
-  "AssignableScopes": [
-    "/subscriptions/e6ebb882-3851-4717-9ba0-e88387bd3b84"
-  ]
+    "id": "/providers/Microsoft.Authorization/roleDefinitions/72fafb9e-0641-4937-9268-a91bfd8191a3",
+    "properties": {
+        "roleName": "Cost Management Reader",
+        "description": "Can view cost data and configuration (e.g. budgets, exports)",
+        "assignableScopes": [
+            "/"
+        ],
+        "permissions": [
+            {
+                "actions": [
+                    "Microsoft.Consumption/*/read",
+                    "Microsoft.CostManagement/*/read",
+                    "Microsoft.Billing/billingPeriods/read",
+                    "Microsoft.Resources/subscriptions/read",
+                    "Microsoft.Resources/subscriptions/resourceGroups/read",
+                    "Microsoft.Support/*",
+                    "Microsoft.Advisor/configurations/read",
+                    "Microsoft.Advisor/recommendations/read",
+                    "Microsoft.Management/managementGroups/read",
+                    "Microsoft.Billing/billingProperty/read"
+                ],
+                "notActions": [],
+                "dataActions": [],
+                "notDataActions": []
+            }
+        ]
+    }
 }
