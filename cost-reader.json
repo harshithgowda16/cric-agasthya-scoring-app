@@ -1,17 +1,20 @@
 {
   "Name": "Cost-Only-Reader-Locked",
   "IsCustom": true,
-  "Description": "Provides ONLY cost and consumption read access. Blocks all resource groups, resources, Azure AD, subscription info, policies, VMs, storage, networking, and all other Azure service blades.",
+  "Description": "Provides ONLY cost and consumption access. Minimal portal metadata permissions added so Cost Management is visible. All other Azure services remain blocked.",
   "Actions": [
     "Microsoft.CostManagement/*/read",
-    "Microsoft.Consumption/*/read"
+    "Microsoft.Consumption/*/read",
+
+    // REQUIRED FOR COST PORTAL MENU
+    "Microsoft.Resources/subscriptions/read",
+    "Microsoft.Resources/subscriptions/resourceGroups/read",
+    "Microsoft.Authorization/roleAssignments/read"
   ],
-  "NotActions": [
-    "*"
-  ],
+  "NotActions": [],
   "DataActions": [],
   "NotDataActions": [],
   "AssignableScopes": [
-    "[subscription().id]"
+    "/subscriptions/e6ebb882-3851-4717-9ba0-e88387bd3b84"
   ]
 }
