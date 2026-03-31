@@ -1,43 +1,59 @@
 {
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
+
   "parameters": {
+
     "adminUsername": {
       "type": "string",
-      "defaultValue": "prtguser"
+      "defaultValue": "prtguser",
+      "metadata": { "description": "Admin username for all VMs." }
     },
     "adminUserPassword": {
       "type": "securestring",
-      "defaultValue": "Prtgpassword123!"
+      "defaultValue": "Prtgpassword123!",
+      "metadata": { "description": "Admin password for all VMs and the SQL logical server." }
     },
+
     "AzureUserName": {
-      "type": "string"
+      "type": "string",
+      "metadata": { "description": "CloudLabs Azure user UPN. Injected by the platform." }
     },
     "AzurePassword": {
-      "type": "securestring"
+      "type": "securestring",
+      "metadata": { "description": "CloudLabs Azure user password. Injected by the platform." }
     },
     "ODLID": {
-      "type": "string"
+      "type": "string",
+      "metadata": { "description": "CloudLabs ODL ID. Injected by the platform." }
     },
     "DeploymentID": {
-      "type": "string"
+      "type": "string",
+      "metadata": { "description": "CloudLabs deployment ID. Used to suffix resource names for uniqueness." }
     },
     "InstallCloudLabsShadow": {
       "type": "string",
       "defaultValue": "yes",
-      "allowedValues": [ "yes", "no" ]
+      "allowedValues": [ "yes", "no" ],
+      "metadata": { "description": "Whether to install the CloudLabs shadow agent on the Windows VM." }
     },
     "trainerUserName": {
-      "type": "string"
+      "type": "string",
+      "metadata": { "description": "Trainer account username for CloudLabs shadow." }
     },
     "trainerUserPassword": {
-      "type": "string"
+      "type": "string",
+      "metadata": { "description": "Trainer account password for CloudLabs shadow." }
     },
     "resetUserPassword": {
-      "type": "string"
+      "type": "string",
+      "metadata": { "description": "Password exposed in CloudLabs outputs as the lab VM password." }
     }
+
   },
+
   "variables": {
+
     "cloudlabsCommon": "[concat(' -AzureUserName ', parameters('AzureUserName'), ' -AzurePassword ', parameters('AzurePassword'), ' -AzureTenantID ', variables('AzureTenantID'), ' -AzureSubscriptionID ', variables('AzureSubscriptionID'), ' -ODLID ', parameters('ODLID'), ' -InstallCloudLabsShadow ', parameters('InstallCloudLabsShadow'))]",
     "Enable-CloudLabsEmbeddedShadow": "[concat(' -vmAdminUsername ', parameters('adminUsername'), ' -trainerUserName ', parameters('trainerUserName'), ' -trainerUserPassword ', parameters('trainerUserPassword'), ' -resetUserPassword ', parameters('resetUserPassword'))]",
     "AzureSubscriptionID": "[subscription().subscriptionId]",
@@ -53,7 +69,7 @@
     "winNicName": "[concat('prtg-win-', parameters('DeploymentID'), '-nic')]",
     "winNsgName": "[concat('prtg-win-', parameters('DeploymentID'), '-nsg')]",
     "winPipName": "[concat('prtg-win-', parameters('DeploymentID'), '-pip')]",
-    "winPipDns": "[concat('prtgwin', uniqueString(resourceGroup().id))]",
+    "winPipDns": "[toLower(concat('prtgwin', uniqueString(resourceGroup().id)))]",
     "winOsDisk": "[concat('prtg-win-osdisk-', parameters('DeploymentID'))]",
     "winVmSize": "Standard_B2s",
     "winComputerName": "prtgwinvm",
@@ -62,28 +78,22 @@
     "linuxNicName": "[concat('prtg-docker-', parameters('DeploymentID'), '-nic')]",
     "linuxNsgName": "[concat('prtg-docker-', parameters('DeploymentID'), '-nsg')]",
     "linuxPipName": "[concat('prtg-docker-', parameters('DeploymentID'), '-pip')]",
-    "linuxPipDns": "[concat('prtgdocker', uniqueString(resourceGroup().id))]",
+    "linuxPipDns": "[toLower(concat('prtgdocker', uniqueString(resourceGroup().id)))]",
     "linuxOsDisk": "[concat('prtg-docker-osdisk-', parameters('DeploymentID'))]",
     "linuxVmSize": "Standard_B2s",
     "linuxComputerName": "prtgdockervm",
 
-    "merakiVmName": "[concat('prtg-meraki-', parameters('DeploymentID'))]",
-    "merakiNicName": "[concat('prtg-meraki-', parameters('DeploymentID'), '-nic')]",
-    "merakiNsgName": "[concat('prtg-meraki-', parameters('DeploymentID'), '-nsg')]",
-    "merakiPipName": "[concat('prtg-meraki-', parameters('DeploymentID'), '-pip')]",
-    "merakiPipDns": "[concat('prtgmeraki', uniqueString(resourceGroup().id))]",
-    "merakiOsDisk": "[concat('prtg-meraki-osdisk-', parameters('DeploymentID'))]",
-    "merakiVmSize": "Standard_B2s",
-    "merakiComputerName": "prtgmerakivm",
-
-    "sqlServerName": "[concat('prtgsql', toLower(parameters('DeploymentID')), toLower(uniqueString(resourceGroup().id)))]",
+    "sqlServerName": "[toLower(concat('prtgsql', parameters('DeploymentID'), uniqueString(resourceGroup().id)))]",
     "sqlDbName": "prtgshareddb",
 
-    "storageAccountName": "[concat('prtgsa', toLower(uniqueString(resourceGroup().id)))]"
+    "storageAccountName": "[toLower(concat('prtgsa', uniqueString(resourceGroup().id)))]"
+
   },
+
   "resources": [
 
     {
+      "comments": "Windows Server 2022 VM — PRTG shared monitoring target (RDP only)",
       "type": "Microsoft.Network/publicIpAddresses",
       "apiVersion": "2020-08-01",
       "name": "[variables('winPipName')]",
@@ -185,8 +195,35 @@
         }
       }
     },
+    {
+      "comments": "CloudLabs shadow + any post-deploy setup on the Windows VM",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2015-06-15",
+      "name": "[concat(variables('winVmName'), '/winExtension')]",
+      "location": "[variables('location')]",
+      "tags": { "displayName": "VM Extension" },
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', variables('winVmName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": [
+            "https://experienceazure.blob.core.windows.net/templates/paessler/win2025/generalized-vm/psscript.ps1",
+            "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
+          ]
+        },
+        "protectedSettings": {
+          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/win2025/generalized-vm/psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'))]"
+        }
+      }
+    },
 
     {
+      "comments": "Ubuntu 24.04 LTS VM — Docker CE pre-installed via CustomScript extension (SSH only)",
       "type": "Microsoft.Network/publicIpAddresses",
       "apiVersion": "2020-08-01",
       "name": "[variables('linuxPipName')]",
@@ -288,6 +325,7 @@
       }
     },
     {
+      "comments": "Install Docker CE from the official Docker apt repo. Starts nginx container on port 8080 as a live monitoring target.",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "apiVersion": "2021-11-01",
       "name": "[concat(variables('linuxVmName'), '/installDocker')]",
@@ -300,117 +338,14 @@
         "type": "CustomScript",
         "typeHandlerVersion": "2.1",
         "autoUpgradeMinorVersion": true,
-        "settings": {
-          "script": "[base64('#!/bin/bash\nset -e\napt-get update -y\napt-get install -y ca-certificates curl gnupg\ninstall -m 0755 -d /etc/apt/keyrings\ncurl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg\nchmod a+r /etc/apt/keyrings/docker.gpg\n. /etc/os-release\necho \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable\" | tee /etc/apt/sources.list.d/docker.list > /dev/null\napt-get update -y\napt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin\nsystemctl enable docker\nsystemctl start docker\nusermod -aG docker prtguser\ndocker pull nginx:latest\ndocker run -d --name nginx-demo --restart always -p 8080:80 nginx:latest\n')]"
+        "protectedSettings": {
+          "script": "[base64(concat('#!/bin/bash\nset -e\nexport DEBIAN_FRONTEND=noninteractive\napt-get update -y\napt-get install -y ca-certificates curl gnupg lsb-release\ninstall -m 0755 -d /etc/apt/keyrings\ncurl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg\nchmod a+r /etc/apt/keyrings/docker.gpg\n. /etc/os-release\necho \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable\" | tee /etc/apt/sources.list.d/docker.list > /dev/null\napt-get update -y\napt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin\nsystemctl enable docker\nsystemctl start docker\nusermod -aG docker ', parameters('adminUsername'), '\ndocker pull nginx:latest\ndocker run -d --name nginx-demo --restart always -p 8080:80 nginx:latest\necho \"Docker installation complete\" >> /var/log/docker-install.log\n'))]"
         }
       }
     },
 
     {
-      "type": "Microsoft.Network/publicIpAddresses",
-      "apiVersion": "2020-08-01",
-      "name": "[variables('merakiPipName')]",
-      "location": "[variables('location')]",
-      "sku": { "name": "Standard", "tier": "Regional" },
-      "properties": {
-        "publicIpAllocationMethod": "Static",
-        "dnsSettings": { "domainNameLabel": "[variables('merakiPipDns')]" }
-      }
-    },
-    {
-      "type": "Microsoft.Network/networkSecurityGroups",
-      "apiVersion": "2020-05-01",
-      "name": "[variables('merakiNsgName')]",
-      "location": "[variables('location')]",
-      "properties": {
-        "securityRules": [
-          {
-            "name": "allow-ssh",
-            "properties": {
-              "priority": 110,
-              "protocol": "TCP",
-              "access": "Allow",
-              "direction": "Inbound",
-              "sourceAddressPrefix": "*",
-              "sourcePortRange": "*",
-              "destinationAddressPrefix": "*",
-              "destinationPortRange": "22"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "type": "Microsoft.Network/networkInterfaces",
-      "apiVersion": "2022-11-01",
-      "name": "[variables('merakiNicName')]",
-      "location": "[variables('location')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/publicIpAddresses', variables('merakiPipName'))]",
-        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('merakiNsgName'))]"
-      ],
-      "properties": {
-        "ipConfigurations": [
-          {
-            "name": "ipconfig1",
-            "properties": {
-              "subnet": { "id": "[variables('subnetRef')]" },
-              "privateIPAllocationMethod": "Dynamic",
-              "publicIpAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('merakiPipName'))]"
-              }
-            }
-          }
-        ],
-        "networkSecurityGroup": {
-          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('merakiNsgName'))]"
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachines",
-      "apiVersion": "2024-03-01",
-      "name": "[variables('merakiVmName')]",
-      "location": "[variables('location')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/networkInterfaces', variables('merakiNicName'))]"
-      ],
-      "plan": {
-        "name": "cisco-meraki-vmx",
-        "publisher": "cisco",
-        "product": "cisco-meraki-vmx"
-      },
-      "properties": {
-        "hardwareProfile": { "vmSize": "[variables('merakiVmSize')]" },
-        "storageProfile": {
-          "osDisk": {
-            "createOption": "FromImage",
-            "name": "[variables('merakiOsDisk')]",
-            "caching": "ReadWrite",
-            "managedDisk": { "storageAccountType": "StandardSSD_LRS" },
-            "diskSizeGB": 64
-          },
-          "imageReference": {
-            "publisher": "cisco",
-            "offer": "cisco-meraki-vmx",
-            "sku": "cisco-meraki-vmx",
-            "version": "latest"
-          }
-        },
-        "osProfile": {
-          "computerName": "[variables('merakiComputerName')]",
-          "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminUserPassword')]"
-        },
-        "networkProfile": {
-          "networkInterfaces": [
-            { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('merakiNicName'))]" }
-          ]
-        }
-      }
-    },
-
-    {
+      "comments": "Azure SQL logical server — PRTG Azure SQL Database sensor target",
       "type": "Microsoft.Sql/servers",
       "apiVersion": "2022-05-01-preview",
       "name": "[variables('sqlServerName')]",
@@ -424,6 +359,7 @@
       }
     },
     {
+      "comments": "Allow all Azure-internal services (0.0.0.0/0.0.0.0 is the Azure-services magic range, not the internet)",
       "type": "Microsoft.Sql/servers/firewallRules",
       "apiVersion": "2022-05-01-preview",
       "name": "[concat(variables('sqlServerName'), '/AllowAllAzureServices')]",
@@ -436,6 +372,7 @@
       }
     },
     {
+      "comments": "Basic-tier single database — 5 DTU, 2 GB max. Sufficient for PRTG SQL sensor exercises.",
       "type": "Microsoft.Sql/servers/databases",
       "apiVersion": "2022-05-01-preview",
       "name": "[concat(variables('sqlServerName'), '/', variables('sqlDbName'))]",
@@ -456,6 +393,7 @@
     },
 
     {
+      "comments": "StorageV2 Standard LRS — PRTG Azure Storage Account sensor target",
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2023-01-01",
       "name": "[variables('storageAccountName')]",
@@ -475,53 +413,50 @@
     }
 
   ],
+
   "outputs": {
     "DeploymentID": {
-      "type": "String",
+      "type": "string",
       "value": "[parameters('DeploymentID')]"
     },
     "Windows VM - DNS Name": {
-      "type": "String",
+      "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('winPipName'))).dnsSettings.fqdn]"
     },
     "Windows VM - Private IP": {
-      "type": "String",
+      "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('winNicName'))).ipConfigurations[0].properties.privateIPAddress]"
     },
     "Docker VM - DNS Name": {
-      "type": "String",
+      "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('linuxPipName'))).dnsSettings.fqdn]"
     },
     "Docker VM - Private IP": {
-      "type": "String",
+      "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('linuxNicName'))).ipConfigurations[0].properties.privateIPAddress]"
     },
-    "Meraki VM - DNS Name": {
-      "type": "String",
-      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('merakiPipName'))).dnsSettings.fqdn]"
-    },
-    "Meraki VM - Private IP": {
-      "type": "String",
-      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('merakiNicName'))).ipConfigurations[0].properties.privateIPAddress]"
-    },
     "SQL Server - FQDN": {
-      "type": "String",
+      "type": "string",
       "value": "[reference(resourceId('Microsoft.Sql/servers', variables('sqlServerName'))).fullyQualifiedDomainName]"
     },
     "SQL Database - Name": {
-      "type": "String",
+      "type": "string",
       "value": "[variables('sqlDbName')]"
     },
+    "SQL Admin Username": {
+      "type": "string",
+      "value": "[parameters('adminUsername')]"
+    },
     "Storage Account - Name": {
-      "type": "String",
+      "type": "string",
       "value": "[variables('storageAccountName')]"
     },
     "VM Admin Username": {
-      "type": "String",
+      "type": "string",
       "value": "[parameters('adminUsername')]"
     },
     "VM Admin Password": {
-      "type": "String",
+      "type": "string",
       "value": "[parameters('resetUserPassword')]"
     }
   }
