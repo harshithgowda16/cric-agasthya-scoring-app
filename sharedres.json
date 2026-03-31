@@ -1,0 +1,528 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": {
+      "type": "string",
+      "defaultValue": "prtguser"
+    },
+    "adminUserPassword": {
+      "type": "securestring",
+      "defaultValue": "Prtgpassword123!"
+    },
+    "AzureUserName": {
+      "type": "string"
+    },
+    "AzurePassword": {
+      "type": "securestring"
+    },
+    "ODLID": {
+      "type": "string"
+    },
+    "DeploymentID": {
+      "type": "string"
+    },
+    "InstallCloudLabsShadow": {
+      "type": "string",
+      "defaultValue": "yes",
+      "allowedValues": [ "yes", "no" ]
+    },
+    "trainerUserName": {
+      "type": "string"
+    },
+    "trainerUserPassword": {
+      "type": "string"
+    },
+    "resetUserPassword": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "cloudlabsCommon": "[concat(' -AzureUserName ', parameters('AzureUserName'), ' -AzurePassword ', parameters('AzurePassword'), ' -AzureTenantID ', variables('AzureTenantID'), ' -AzureSubscriptionID ', variables('AzureSubscriptionID'), ' -ODLID ', parameters('ODLID'), ' -InstallCloudLabsShadow ', parameters('InstallCloudLabsShadow'))]",
+    "Enable-CloudLabsEmbeddedShadow": "[concat(' -vmAdminUsername ', parameters('adminUsername'), ' -trainerUserName ', parameters('trainerUserName'), ' -trainerUserPassword ', parameters('trainerUserPassword'), ' -resetUserPassword ', parameters('resetUserPassword'))]",
+    "AzureSubscriptionID": "[subscription().subscriptionId]",
+    "AzureTenantID": "[subscription().tenantId]",
+    "location": "[resourceGroup().location]",
+
+    "vnetResourceGroup": "paessler-prod-vnet",
+    "vnetName": "[concat('paesslerLab-vNet-', variables('location'))]",
+    "subnetName": "Subnet",
+    "subnetRef": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', variables('vnetResourceGroup'), '/providers/Microsoft.Network/virtualNetworks/', variables('vnetName'), '/subnets/', variables('subnetName'))]",
+
+    "winVmName": "[concat('prtg-win-', parameters('DeploymentID'))]",
+    "winNicName": "[concat('prtg-win-', parameters('DeploymentID'), '-nic')]",
+    "winNsgName": "[concat('prtg-win-', parameters('DeploymentID'), '-nsg')]",
+    "winPipName": "[concat('prtg-win-', parameters('DeploymentID'), '-pip')]",
+    "winPipDns": "[concat('prtgwin', uniqueString(resourceGroup().id))]",
+    "winOsDisk": "[concat('prtg-win-osdisk-', parameters('DeploymentID'))]",
+    "winVmSize": "Standard_B2s",
+    "winComputerName": "prtgwinvm",
+
+    "linuxVmName": "[concat('prtg-docker-', parameters('DeploymentID'))]",
+    "linuxNicName": "[concat('prtg-docker-', parameters('DeploymentID'), '-nic')]",
+    "linuxNsgName": "[concat('prtg-docker-', parameters('DeploymentID'), '-nsg')]",
+    "linuxPipName": "[concat('prtg-docker-', parameters('DeploymentID'), '-pip')]",
+    "linuxPipDns": "[concat('prtgdocker', uniqueString(resourceGroup().id))]",
+    "linuxOsDisk": "[concat('prtg-docker-osdisk-', parameters('DeploymentID'))]",
+    "linuxVmSize": "Standard_B2s",
+    "linuxComputerName": "prtgdockervm",
+
+    "merakiVmName": "[concat('prtg-meraki-', parameters('DeploymentID'))]",
+    "merakiNicName": "[concat('prtg-meraki-', parameters('DeploymentID'), '-nic')]",
+    "merakiNsgName": "[concat('prtg-meraki-', parameters('DeploymentID'), '-nsg')]",
+    "merakiPipName": "[concat('prtg-meraki-', parameters('DeploymentID'), '-pip')]",
+    "merakiPipDns": "[concat('prtgmeraki', uniqueString(resourceGroup().id))]",
+    "merakiOsDisk": "[concat('prtg-meraki-osdisk-', parameters('DeploymentID'))]",
+    "merakiVmSize": "Standard_B2s",
+    "merakiComputerName": "prtgmerakivm",
+
+    "sqlServerName": "[concat('prtgsql', toLower(parameters('DeploymentID')), toLower(uniqueString(resourceGroup().id)))]",
+    "sqlDbName": "prtgshareddb",
+
+    "storageAccountName": "[concat('prtgsa', toLower(uniqueString(resourceGroup().id)))]"
+  },
+  "resources": [
+
+    {
+      "type": "Microsoft.Network/publicIpAddresses",
+      "apiVersion": "2020-08-01",
+      "name": "[variables('winPipName')]",
+      "location": "[variables('location')]",
+      "sku": { "name": "Standard", "tier": "Regional" },
+      "properties": {
+        "publicIpAllocationMethod": "Static",
+        "dnsSettings": { "domainNameLabel": "[variables('winPipDns')]" }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2020-05-01",
+      "name": "[variables('winNsgName')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "allow-rdp",
+            "properties": {
+              "priority": 110,
+              "protocol": "TCP",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "3389"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2022-11-01",
+      "name": "[variables('winNicName')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIpAddresses', variables('winPipName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('winNsgName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": { "id": "[variables('subnetRef')]" },
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIpAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('winPipName'))]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('winNsgName'))]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2024-03-01",
+      "name": "[variables('winVmName')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('winNicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": { "vmSize": "[variables('winVmSize')]" },
+        "storageProfile": {
+          "osDisk": {
+            "createOption": "FromImage",
+            "name": "[variables('winOsDisk')]",
+            "caching": "ReadWrite",
+            "managedDisk": { "storageAccountType": "StandardSSD_LRS" },
+            "diskSizeGB": 128
+          },
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2022-Datacenter",
+            "version": "latest"
+          }
+        },
+        "osProfile": {
+          "computerName": "[variables('winComputerName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminUserPassword')]",
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": false,
+            "provisionVMAgent": true
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('winNicName'))]" }
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "Microsoft.Network/publicIpAddresses",
+      "apiVersion": "2020-08-01",
+      "name": "[variables('linuxPipName')]",
+      "location": "[variables('location')]",
+      "sku": { "name": "Standard", "tier": "Regional" },
+      "properties": {
+        "publicIpAllocationMethod": "Static",
+        "dnsSettings": { "domainNameLabel": "[variables('linuxPipDns')]" }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2020-05-01",
+      "name": "[variables('linuxNsgName')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "allow-ssh",
+            "properties": {
+              "priority": 110,
+              "protocol": "TCP",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "22"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2022-11-01",
+      "name": "[variables('linuxNicName')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIpAddresses', variables('linuxPipName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('linuxNsgName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": { "id": "[variables('subnetRef')]" },
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIpAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('linuxPipName'))]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('linuxNsgName'))]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2024-03-01",
+      "name": "[variables('linuxVmName')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('linuxNicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": { "vmSize": "[variables('linuxVmSize')]" },
+        "storageProfile": {
+          "osDisk": {
+            "createOption": "FromImage",
+            "name": "[variables('linuxOsDisk')]",
+            "caching": "ReadWrite",
+            "managedDisk": { "storageAccountType": "StandardSSD_LRS" },
+            "diskSizeGB": 64
+          },
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "ubuntu-24_04-lts",
+            "sku": "server",
+            "version": "latest"
+          }
+        },
+        "osProfile": {
+          "computerName": "[variables('linuxComputerName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminUserPassword')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": false
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('linuxNicName'))]" }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2021-11-01",
+      "name": "[concat(variables('linuxVmName'), '/installDocker')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', variables('linuxVmName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.1",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "script": "[base64('#!/bin/bash\nset -e\napt-get update -y\napt-get install -y ca-certificates curl gnupg\ninstall -m 0755 -d /etc/apt/keyrings\ncurl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg\nchmod a+r /etc/apt/keyrings/docker.gpg\n. /etc/os-release\necho \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable\" | tee /etc/apt/sources.list.d/docker.list > /dev/null\napt-get update -y\napt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin\nsystemctl enable docker\nsystemctl start docker\nusermod -aG docker prtguser\ndocker pull nginx:latest\ndocker run -d --name nginx-demo --restart always -p 8080:80 nginx:latest\n')]"
+        }
+      }
+    },
+
+    {
+      "type": "Microsoft.Network/publicIpAddresses",
+      "apiVersion": "2020-08-01",
+      "name": "[variables('merakiPipName')]",
+      "location": "[variables('location')]",
+      "sku": { "name": "Standard", "tier": "Regional" },
+      "properties": {
+        "publicIpAllocationMethod": "Static",
+        "dnsSettings": { "domainNameLabel": "[variables('merakiPipDns')]" }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2020-05-01",
+      "name": "[variables('merakiNsgName')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "allow-ssh",
+            "properties": {
+              "priority": 110,
+              "protocol": "TCP",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "22"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2022-11-01",
+      "name": "[variables('merakiNicName')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIpAddresses', variables('merakiPipName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('merakiNsgName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": { "id": "[variables('subnetRef')]" },
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIpAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('merakiPipName'))]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('merakiNsgName'))]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2024-03-01",
+      "name": "[variables('merakiVmName')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('merakiNicName'))]"
+      ],
+      "plan": {
+        "name": "cisco-meraki-vmx",
+        "publisher": "cisco",
+        "product": "cisco-meraki-vmx"
+      },
+      "properties": {
+        "hardwareProfile": { "vmSize": "[variables('merakiVmSize')]" },
+        "storageProfile": {
+          "osDisk": {
+            "createOption": "FromImage",
+            "name": "[variables('merakiOsDisk')]",
+            "caching": "ReadWrite",
+            "managedDisk": { "storageAccountType": "StandardSSD_LRS" },
+            "diskSizeGB": 64
+          },
+          "imageReference": {
+            "publisher": "cisco",
+            "offer": "cisco-meraki-vmx",
+            "sku": "cisco-meraki-vmx",
+            "version": "latest"
+          }
+        },
+        "osProfile": {
+          "computerName": "[variables('merakiComputerName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminUserPassword')]"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('merakiNicName'))]" }
+          ]
+        }
+      }
+    },
+
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2022-05-01-preview",
+      "name": "[variables('sqlServerName')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "administratorLogin": "[parameters('adminUsername')]",
+        "administratorLoginPassword": "[parameters('adminUserPassword')]",
+        "version": "12.0",
+        "publicNetworkAccess": "Enabled",
+        "minimalTlsVersion": "1.2"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2022-05-01-preview",
+      "name": "[concat(variables('sqlServerName'), '/AllowAllAzureServices')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', variables('sqlServerName'))]"
+      ],
+      "properties": {
+        "startIpAddress": "0.0.0.0",
+        "endIpAddress": "0.0.0.0"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2022-05-01-preview",
+      "name": "[concat(variables('sqlServerName'), '/', variables('sqlDbName'))]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', variables('sqlServerName'))]"
+      ],
+      "sku": {
+        "name": "Basic",
+        "tier": "Basic",
+        "capacity": 5
+      },
+      "properties": {
+        "collation": "SQL_Latin1_General_CP1_CI_AS",
+        "maxSizeBytes": 2147483648,
+        "requestedBackupStorageRedundancy": "Local"
+      }
+    },
+
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('storageAccountName')]",
+      "location": "[variables('location')]",
+      "sku": { "name": "Standard_LRS" },
+      "kind": "StorageV2",
+      "properties": {
+        "accessTier": "Hot",
+        "supportsHttpsTrafficOnly": true,
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": false,
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "defaultAction": "Allow"
+        }
+      }
+    }
+
+  ],
+  "outputs": {
+    "DeploymentID": {
+      "type": "String",
+      "value": "[parameters('DeploymentID')]"
+    },
+    "Windows VM - DNS Name": {
+      "type": "String",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('winPipName'))).dnsSettings.fqdn]"
+    },
+    "Windows VM - Private IP": {
+      "type": "String",
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('winNicName'))).ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "Docker VM - DNS Name": {
+      "type": "String",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('linuxPipName'))).dnsSettings.fqdn]"
+    },
+    "Docker VM - Private IP": {
+      "type": "String",
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('linuxNicName'))).ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "Meraki VM - DNS Name": {
+      "type": "String",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('merakiPipName'))).dnsSettings.fqdn]"
+    },
+    "Meraki VM - Private IP": {
+      "type": "String",
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('merakiNicName'))).ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "SQL Server - FQDN": {
+      "type": "String",
+      "value": "[reference(resourceId('Microsoft.Sql/servers', variables('sqlServerName'))).fullyQualifiedDomainName]"
+    },
+    "SQL Database - Name": {
+      "type": "String",
+      "value": "[variables('sqlDbName')]"
+    },
+    "Storage Account - Name": {
+      "type": "String",
+      "value": "[variables('storageAccountName')]"
+    },
+    "VM Admin Username": {
+      "type": "String",
+      "value": "[parameters('adminUsername')]"
+    },
+    "VM Admin Password": {
+      "type": "String",
+      "value": "[parameters('resetUserPassword')]"
+    }
+  }
+}
