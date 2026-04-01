@@ -35,7 +35,7 @@
       "value": "Password.!!1"
     },
 
-    "spn_name": {
+    "spnClientId": {
       "value": "PRTG-Training-SP"
     },
     "spnClientSecret": {
