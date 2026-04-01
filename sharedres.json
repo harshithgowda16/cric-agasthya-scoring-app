@@ -7,47 +7,62 @@
     "adminUsername": {
       "type": "string",
       "defaultValue": "prtguser",
-      "metadata": { "description": "Admin username for all VMs." }
+      "metadata": { "description": "Admin username applied to all VMs and the SQL logical server." }
     },
     "adminUserPassword": {
       "type": "securestring",
-      "defaultValue": "Prtgpassword123!",
-      "metadata": { "description": "Admin password for all VMs and the SQL logical server." }
+      "metadata": { "description": "Admin password applied to all VMs and the SQL logical server." }
     },
 
     "AzureUserName": {
       "type": "string",
-      "metadata": { "description": "CloudLabs Azure user UPN. Injected by the platform." }
+      "metadata": { "description": "CloudLabs Azure user UPN — injected by the platform at deploy time." }
     },
     "AzurePassword": {
       "type": "securestring",
-      "metadata": { "description": "CloudLabs Azure user password. Injected by the platform." }
+      "metadata": { "description": "CloudLabs Azure user password — injected by the platform at deploy time." }
     },
     "ODLID": {
       "type": "string",
-      "metadata": { "description": "CloudLabs ODL ID. Injected by the platform." }
+      "metadata": { "description": "CloudLabs ODL identifier — injected by the platform." }
     },
     "DeploymentID": {
       "type": "string",
-      "metadata": { "description": "CloudLabs deployment ID. Used to suffix resource names for uniqueness." }
+      "metadata": { "description": "CloudLabs deployment ID — used to unique-suffix resource names." }
     },
     "InstallCloudLabsShadow": {
       "type": "string",
       "defaultValue": "yes",
       "allowedValues": [ "yes", "no" ],
-      "metadata": { "description": "Whether to install the CloudLabs shadow agent on the Windows VM." }
+      "metadata": { "description": "Install the CloudLabs shadow agent on the Windows VM." }
     },
     "trainerUserName": {
       "type": "string",
-      "metadata": { "description": "Trainer account username for CloudLabs shadow." }
+      "metadata": { "description": "Trainer account username for CloudLabs embedded shadow." }
     },
     "trainerUserPassword": {
       "type": "string",
-      "metadata": { "description": "Trainer account password for CloudLabs shadow." }
+      "metadata": { "description": "Trainer account password for CloudLabs embedded shadow." }
     },
     "resetUserPassword": {
       "type": "string",
-      "metadata": { "description": "Password exposed in CloudLabs outputs as the lab VM password." }
+      "metadata": { "description": "The VM password surfaced in CloudLabs lab outputs." }
+    },
+
+    "spn_name": {
+      "type": "string",
+      "defaultValue": "PRTG-Training-SP",
+      "metadata": { "description": "App Registration Client ID (Application ID) for the PRTG-Training-SP service principal." }
+    },
+    "spnClientSecret": {
+      "type": "securestring",
+      "defaultValue": "knT8Q~oHl63Muwr7yc27Ijd.Zhc2KtfmItW-yc77",
+      "metadata": { "description": "Client secret value for the PRTG-Training-SP service principal." }
+    },
+    "spnSecretId": {
+      "type": "string",
+      "defaultValue": "2d9ce5fe-1b0c-44e5-ba36-c93225179d83",
+      "metadata": { "description": "Secret object ID (not used by PRTG directly — kept for reference)." }
     }
 
   },
@@ -60,10 +75,11 @@
     "AzureTenantID": "[subscription().tenantId]",
     "location": "[resourceGroup().location]",
 
-    "vnetResourceGroup": "paessler-prod-vnet",
-    "vnetName": "[concat('paesslerLab-vNet-', variables('location'))]",
-    "subnetName": "Subnet",
-    "subnetRef": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', variables('vnetResourceGroup'), '/providers/Microsoft.Network/virtualNetworks/', variables('vnetName'), '/subnets/', variables('subnetName'))]",
+    "vnetName": "prtg-shared-vnet",
+    "vnetAddressPrefix": "10.10.0.0/16",
+    "subnetName": "prtg-shared-subnet",
+    "subnetPrefix": "10.10.0.0/24",
+    "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetName'))]",
 
     "winVmName": "[concat('prtg-win-', parameters('DeploymentID'))]",
     "winNicName": "[concat('prtg-win-', parameters('DeploymentID'), '-nic')]",
@@ -86,14 +102,39 @@
     "sqlServerName": "[toLower(concat('prtgsql', parameters('DeploymentID'), uniqueString(resourceGroup().id)))]",
     "sqlDbName": "prtgshareddb",
 
-    "storageAccountName": "[toLower(concat('prtgsa', uniqueString(resourceGroup().id)))]"
+    "storageAccountName": "[toLower(concat('prtgsa', uniqueString(resourceGroup().id)))]",
+
+    "spn_name": "[parameters('spn_name')]",
+    "spnClientSecret": "[parameters('spnClientSecret')]",
+    "spnSecretId": "[parameters('spnSecretId')]"
 
   },
 
   "resources": [
 
     {
-      "comments": "Windows Server 2022 VM — PRTG shared monitoring target (RDP only)",
+      "comments": "VNet — self-contained networking for the shared PRTG lab RG. No dependency on external VNets.",
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2022-11-01",
+      "name": "[variables('vnetName')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [ "[variables('vnetAddressPrefix')]" ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('subnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('subnetPrefix')]"
+            }
+          }
+        ]
+      }
+    },
+
+    {
+      "comments": "Windows Server 2022 VM — PRTG shared monitoring target. RDP (3389) inbound only.",
       "type": "Microsoft.Network/publicIpAddresses",
       "apiVersion": "2020-08-01",
       "name": "[variables('winPipName')]",
@@ -133,6 +174,7 @@
       "name": "[variables('winNicName')]",
       "location": "[variables('location')]",
       "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]",
         "[resourceId('Microsoft.Network/publicIpAddresses', variables('winPipName'))]",
         "[resourceId('Microsoft.Network/networkSecurityGroups', variables('winNsgName'))]"
       ],
@@ -196,7 +238,7 @@
       }
     },
     {
-      "comments": "CloudLabs shadow + any post-deploy setup on the Windows VM",
+      "comments": "CloudLabs shadow agent + post-deploy setup on the Windows VM.",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "apiVersion": "2015-06-15",
       "name": "[concat(variables('winVmName'), '/winExtension')]",
@@ -223,7 +265,7 @@
     },
 
     {
-      "comments": "Ubuntu 24.04 LTS VM — Docker CE pre-installed via CustomScript extension (SSH only)",
+      "comments": "Ubuntu 24.04 LTS VM — Docker CE installed via CustomScript. SSH (22) inbound only.",
       "type": "Microsoft.Network/publicIpAddresses",
       "apiVersion": "2020-08-01",
       "name": "[variables('linuxPipName')]",
@@ -263,6 +305,7 @@
       "name": "[variables('linuxNicName')]",
       "location": "[variables('location')]",
       "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]",
         "[resourceId('Microsoft.Network/publicIpAddresses', variables('linuxPipName'))]",
         "[resourceId('Microsoft.Network/networkSecurityGroups', variables('linuxNsgName'))]"
       ],
@@ -325,7 +368,7 @@
       }
     },
     {
-      "comments": "Install Docker CE from the official Docker apt repo. Starts nginx container on port 8080 as a live monitoring target.",
+      "comments": "Install Docker CE from the official Docker apt repo. Pulls nginx and starts a demo container on port 8080 as a live PRTG monitoring target.",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "apiVersion": "2021-11-01",
       "name": "[concat(variables('linuxVmName'), '/installDocker')]",
@@ -345,7 +388,7 @@
     },
 
     {
-      "comments": "Azure SQL logical server — PRTG Azure SQL Database sensor target",
+      "comments": "Azure SQL logical server — PRTG Azure SQL Database sensor target.",
       "type": "Microsoft.Sql/servers",
       "apiVersion": "2022-05-01-preview",
       "name": "[variables('sqlServerName')]",
@@ -359,7 +402,7 @@
       }
     },
     {
-      "comments": "Allow all Azure-internal services (0.0.0.0/0.0.0.0 is the Azure-services magic range, not the internet)",
+      "comments": "Firewall rule — 0.0.0.0 to 0.0.0.0 is the Azure-services magic range. Allows PRTG (running inside Azure) to reach the SQL API without opening to the internet.",
       "type": "Microsoft.Sql/servers/firewallRules",
       "apiVersion": "2022-05-01-preview",
       "name": "[concat(variables('sqlServerName'), '/AllowAllAzureServices')]",
@@ -372,7 +415,7 @@
       }
     },
     {
-      "comments": "Basic-tier single database — 5 DTU, 2 GB max. Sufficient for PRTG SQL sensor exercises.",
+      "comments": "Basic-tier database — 5 DTU, 2 GB max, local backup redundancy. Sufficient for PRTG SQL sensor exercises.",
       "type": "Microsoft.Sql/servers/databases",
       "apiVersion": "2022-05-01-preview",
       "name": "[concat(variables('sqlServerName'), '/', variables('sqlDbName'))]",
@@ -393,7 +436,7 @@
     },
 
     {
-      "comments": "StorageV2 Standard LRS — PRTG Azure Storage Account sensor target",
+      "comments": "StorageV2 Standard LRS — PRTG Azure Storage Account sensor target.",
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2023-01-01",
       "name": "[variables('storageAccountName')]",
@@ -415,9 +458,15 @@
   ],
 
   "outputs": {
+
     "DeploymentID": {
       "type": "string",
       "value": "[parameters('DeploymentID')]"
+    },
+
+    "Windows VM - Name": {
+      "type": "string",
+      "value": "[variables('winVmName')]"
     },
     "Windows VM - DNS Name": {
       "type": "string",
@@ -427,6 +476,11 @@
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('winNicName'))).ipConfigurations[0].properties.privateIPAddress]"
     },
+
+    "Docker VM - Name": {
+      "type": "string",
+      "value": "[variables('linuxVmName')]"
+    },
     "Docker VM - DNS Name": {
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('linuxPipName'))).dnsSettings.fqdn]"
@@ -435,6 +489,7 @@
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('linuxNicName'))).ipConfigurations[0].properties.privateIPAddress]"
     },
+
     "SQL Server - FQDN": {
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Sql/servers', variables('sqlServerName'))).fullyQualifiedDomainName]"
@@ -447,10 +502,12 @@
       "type": "string",
       "value": "[parameters('adminUsername')]"
     },
+
     "Storage Account - Name": {
       "type": "string",
       "value": "[variables('storageAccountName')]"
     },
+
     "VM Admin Username": {
       "type": "string",
       "value": "[parameters('adminUsername')]"
@@ -458,6 +515,28 @@
     "VM Admin Password": {
       "type": "string",
       "value": "[parameters('resetUserPassword')]"
+    },
+
+    "PRTG Azure - Tenant ID": {
+      "type": "string",
+      "value": "[variables('AzureTenantID')]"
+    },
+    "PRTG Azure - Subscription ID": {
+      "type": "string",
+      "value": "[variables('AzureSubscriptionID')]"
+    },
+    "PRTG Azure - Client ID (App ID)": {
+      "type": "string",
+      "value": "[variables('spn_name')]"
+    },
+    "PRTG Azure - Client Secret": {
+      "type": "string",
+      "value": "[variables('spnClientSecret')]"
+    },
+    "PRTG Azure - Secret Object ID": {
+      "type": "string",
+      "value": "[variables('spnSecretId')]"
     }
+
   }
 }
