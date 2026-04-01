@@ -11,23 +11,28 @@
     },
     "adminUserPassword": {
       "type": "securestring",
+      "defaultValue": "Prtgpassword123!",
       "metadata": { "description": "Admin password applied to all VMs and the SQL logical server." }
     },
 
     "AzureUserName": {
       "type": "string",
+      "defaultValue": "GET-AZUSER-UPN",
       "metadata": { "description": "CloudLabs Azure user UPN — injected by the platform at deploy time." }
     },
     "AzurePassword": {
       "type": "securestring",
+      "defaultValue": "GET-AZUSER-PASSWORD",
       "metadata": { "description": "CloudLabs Azure user password — injected by the platform at deploy time." }
     },
     "ODLID": {
       "type": "string",
+      "defaultValue": "GET-ODL-ID",
       "metadata": { "description": "CloudLabs ODL identifier — injected by the platform." }
     },
     "DeploymentID": {
       "type": "string",
+      "defaultValue": "shared",
       "metadata": { "description": "CloudLabs deployment ID — used to unique-suffix resource names." }
     },
     "InstallCloudLabsShadow": {
@@ -38,18 +43,21 @@
     },
     "trainerUserName": {
       "type": "string",
+      "defaultValue": "trainer",
       "metadata": { "description": "Trainer account username for CloudLabs embedded shadow." }
     },
     "trainerUserPassword": {
       "type": "string",
+      "defaultValue": "Password.!!1",
       "metadata": { "description": "Trainer account password for CloudLabs embedded shadow." }
     },
     "resetUserPassword": {
       "type": "string",
+      "defaultValue": "Prtgpassword123!",
       "metadata": { "description": "The VM password surfaced in CloudLabs lab outputs." }
     },
 
-    "spn_name": {
+    "spnClientId": {
       "type": "string",
       "defaultValue": "PRTG-Training-SP",
       "metadata": { "description": "App Registration Client ID (Application ID) for the PRTG-Training-SP service principal." }
@@ -104,7 +112,7 @@
 
     "storageAccountName": "[toLower(concat('prtgsa', uniqueString(resourceGroup().id)))]",
 
-    "spn_name": "[parameters('spn_name')]",
+    "spnClientId": "[parameters('spnClientId')]",
     "spnClientSecret": "[parameters('spnClientSecret')]",
     "spnSecretId": "[parameters('spnSecretId')]"
 
@@ -527,7 +535,7 @@
     },
     "PRTG Azure - Client ID (App ID)": {
       "type": "string",
-      "value": "[variables('spn_name')]"
+      "value": "[variables('spnClientId')]"
     },
     "PRTG Azure - Client Secret": {
       "type": "string",
