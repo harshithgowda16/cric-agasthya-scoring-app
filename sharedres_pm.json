@@ -1,91 +1,49 @@
 {
-
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
-
   "contentVersion": "1.0.0.0",
-
   "parameters": {
- 
+
     "adminUsername": {
-
       "value": "prtguser"
-
     },
-
     "adminUserPassword": {
-
       "value": "Prtgpassword123!"
-
     },
-
     "resetUserPassword": {
-
       "value": "Prtgpassword123!"
-
     },
- 
+
     "AzureUserName": {
-
       "value": "GET-AZUSER-UPN"
-
     },
-
     "AzurePassword": {
-
       "value": "GET-AZUSER-PASSWORD"
-
     },
-
     "ODLID": {
-
       "value": "GET-ODL-ID"
-
     },
-
     "DeploymentID": {
-
       "value": "shared"
-
     },
-
     "InstallCloudLabsShadow": {
-
       "value": "yes"
-
     },
-
     "trainerUserName": {
-
       "value": "trainer"
-
     },
-
     "trainerUserPassword": {
-
       "value": "Password.!!1"
-
     },
- 
+
     "spnClientId": {
-
       "value": "PRTG-Training-SP"
-
     },
-
     "spnClientSecret": {
-
       "value": "knT8Q~oHl63Muwr7yc27Ijd.Zhc2KtfmItW-yc77"
-
     },
-
     "spnSecretId": {
-
       "value": "2d9ce5fe-1b0c-44e5-ba36-c93225179d83"
-
     }
- 
+
   }
-
 }
-
- 
