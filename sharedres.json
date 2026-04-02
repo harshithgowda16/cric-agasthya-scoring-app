@@ -498,6 +498,10 @@
       "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('linuxNicName'))).ipConfigurations[0].properties.privateIPAddress]"
     },
 
+    "SQL Server - Name": {
+      "type": "string",
+      "value": "[variables('sqlServerName')]"
+    },
     "SQL Server - FQDN": {
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Sql/servers', variables('sqlServerName'))).fullyQualifiedDomainName]"
@@ -533,7 +537,7 @@
       "type": "string",
       "value": "[variables('AzureSubscriptionID')]"
     },
-    "PRTG Azure - Client ID (App ID)": {
+    "PRTG Azure - SPN Name": {
       "type": "string",
       "value": "[variables('spnClientId')]"
     },
