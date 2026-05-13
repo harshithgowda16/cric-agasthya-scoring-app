@@ -26,14 +26,14 @@
     "resetUserPassword": {
       "value": "V1ctf909$dot"
     },
-    "kaliImageId": {
-      "value": "/subscriptions/your-subscription-id/resourceGroups/your-rg/providers/Microsoft.Compute/images/kali-attacker-img-def"
+"kaliImageId": {
+      "value": "/subscriptions/672d1b16-4852-4afb-b44f-613647a90f19/resourceGroups/cloudlabs-mgmt-images/providers/Microsoft.Compute/galleries/Vicarius/images/kali-attacker-img-def/versions/latest"
     },
     "ubuntuImageId": {
-      "value": "/subscriptions/your-subscription-id/resourceGroups/your-rg/providers/Microsoft.Compute/images/ubuntu-victim-img-def"
+      "value": "/subscriptions/672d1b16-4852-4afb-b44f-613647a90f19/resourceGroups/cloudlabs-mgmt-images/providers/Microsoft.Compute/galleries/Vicarius/images/ubuntuimagedef/versions/latest"
     },
     "windowsImageId": {
-      "value": "/subscriptions/your-subscription-id/resourceGroups/your-rg/providers/Microsoft.Compute/images/windows-victim-img-def"
+      "value": "/subscriptions/672d1b16-4852-4afb-b44f-613647a90f19/resourceGroups/cloudlabs-mgmt-images/providers/Microsoft.Compute/galleries/Vicarius/images/wundowsvictim/versions/latest"
     },
     "linuxVMSize": {
       "value": "Standard_D2as_v5"
