@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "AzureUserName": {
+      "value": "GET-AZUSER-UPN"
+    },
+    "AzurePassword": {
+      "value": "GET-AZUSER-PASSWORD"
+    },
+    "ODLID": {
+      "value": "GET-ODL-ID"
+    },
+    "DeploymentID": {
+      "value": "GET-DEPLOYMENT-ID"
+    },
+    "InstallCloudLabsShadow": {
+      "value": "yes"
+    },
+    "trainerUserName": {
+      "value": "trainer"
+    },
+    "trainerUserPassword": {
+      "value": "Password.1!!"
+    },
+    "resetUserPassword": {
+      "value": "V1ctf909$dot"
+    },
+    "kaliImageId": {
+      "value": "/subscriptions/672d1b16-4852-4afb-b44f-613647a90f19/resourceGroups/cloudlabs-mgmt-images/providers/Microsoft.Compute/galleries/Vicarius/images/kali-attacker-img-def/versions/latest"
+    },
+    "ubuntuImageId": {
+      "value": "/subscriptions/672d1b16-4852-4afb-b44f-613647a90f19/resourceGroups/cloudlabs-mgmt-images/providers/Microsoft.Compute/galleries/Vicarius/images/ubuntuimagedef/versions/latest"
+    },
+    "windowsImageId": {
+      "value": "/subscriptions/672d1b16-4852-4afb-b44f-613647a90f19/resourceGroups/cloudlabs-mgmt-images/providers/Microsoft.Compute/galleries/Vicarius/images/wundowsvictim/versions/latest"
+    },
+    "linuxVMSize": {
+      "value": "Standard_D2as_v5"
+    },
+    "windowsVMSize": {
+      "value": "Standard_D2as_v5"
+    },
+    "kaliPlanName": {
+      "value": "kali-2026-1"
+    },
+    "kaliPlanProduct": {
+      "value": "kali"
+    },
+    "kaliPlanPublisher": {
+      "value": "kali-linux"
+    }
+  }
+}
