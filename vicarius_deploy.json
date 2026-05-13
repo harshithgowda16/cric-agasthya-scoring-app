@@ -17,7 +17,13 @@
     "windowsVMSize": { "type": "string", "defaultValue": "Standard_D2as_v5" },
     "kaliPlanName": { "type": "string", "defaultValue": "kali-2026-1" },
     "kaliPlanProduct": { "type": "string", "defaultValue": "kali" },
-    "kaliPlanPublisher": { "type": "string", "defaultValue": "kali-linux" }
+    "kaliPlanPublisher": { "type": "string", "defaultValue": "kali-linux" },
+    "vm1AdminUsername": { "type": "string", "defaultValue": "kali" },
+    "vm1AdminPassword": { "type": "securestring", "defaultValue": "kali" },
+    "vm2AdminUsername": { "type": "string", "defaultValue": "vdoom" },
+    "vm2AdminPassword": { "type": "securestring", "defaultValue": "V1ctf909$dot" },
+    "vm3AdminUsername": { "type": "string", "defaultValue": "vAnquish" },
+    "vm3AdminPassword": { "type": "securestring", "defaultValue": "V1ctf909$dot" }
   },
   "variables": {
     "AzureSubscriptionID": "[subscription().subscriptionId]",
@@ -269,12 +275,24 @@
     }
   ],
   "outputs": {
-    "Deployment ID": { "type": "String", "value": "[parameters('DeploymentID')]" },
-    "VM1 Kali Attacker DNS Name": { "type": "String", "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip1'))).dnsSettings.fqdn]" },
-    "VM1 Private IP": { "type": "String", "value": "10.10.10.10" },
-    "VM2 Ubuntu Victim DNS Name": { "type": "String", "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip2'))).dnsSettings.fqdn]" },
-    "VM2 Private IP": { "type": "String", "value": "10.10.10.20" },
-    "VM3 Windows Victim DNS Name": { "type": "String", "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip3'))).dnsSettings.fqdn]" },
-    "VM3 Private IP": { "type": "String", "value": "10.10.10.30" }
+    "Deployment ID": { "type": "string", "value": "[parameters('DeploymentID')]" },
+    
+    "VM1 Name": { "type": "string", "value": "[variables('vm1Name')]" },
+    "VM1 Admin Username": { "type": "string", "value": "[parameters('vm1AdminUsername')]" },
+    "VM1 Admin Password": { "type": "string", "value": "[parameters('vm1AdminPassword')]" },
+    "VM1 DNS Name": { "type": "string", "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip1'))).dnsSettings.fqdn]" },
+    "VM1 Private IP": { "type": "string", "value": "10.10.10.10" },
+    
+    "VM2 Name": { "type": "string", "value": "[variables('vm2Name')]" },
+    "VM2 Admin Username": { "type": "string", "value": "[parameters('vm2AdminUsername')]" },
+    "VM2 Admin Password": { "type": "string", "value": "[parameters('vm2AdminPassword')]" },
+    "VM2 DNS Name": { "type": "string", "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip2'))).dnsSettings.fqdn]" },
+    "VM2 Private IP": { "type": "string", "value": "10.10.10.20" },
+    
+    "VM3 Name": { "type": "string", "value": "[variables('vm3Name')]" },
+    "VM3 Admin Username": { "type": "string", "value": "[parameters('vm3AdminUsername')]" },
+    "VM3 Admin Password": { "type": "string", "value": "[parameters('vm3AdminPassword')]" },
+    "VM3 DNS Name": { "type": "string", "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip3'))).dnsSettings.fqdn]" },
+    "VM3 Private IP": { "type": "string", "value": "10.10.10.30" }
   }
 }
