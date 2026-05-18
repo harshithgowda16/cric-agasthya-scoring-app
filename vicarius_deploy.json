@@ -19,7 +19,7 @@
     "kaliPlanProduct": { "type": "string", "defaultValue": "kali" },
     "kaliPlanPublisher": { "type": "string", "defaultValue": "kali-linux" },
     "vm1AdminUsername": { "type": "string", "defaultValue": "kali" },
-    "vm1AdminPassword": { "type": "securestring", "defaultValue": "kali" },
+    "vm1AdminPassword": { "type": "securestring", "defaultValue": "Kaliuserctf!01" },
     "vm2AdminUsername": { "type": "string", "defaultValue": "vdoom" },
     "vm2AdminPassword": { "type": "securestring", "defaultValue": "V1ctf909$dot" },
     "vm3AdminUsername": { "type": "string", "defaultValue": "vAnquish" },
