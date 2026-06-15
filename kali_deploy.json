@@ -20,11 +20,11 @@
     "storageAccountType": "Premium_LRS",
     "publicIpAddressSku": "Standard",
 
-    "networkSecurityGroupName": "[concat('nsg',parameters('DeploymentID'))]",
-    "virtualNetworkName": "[concat('vnet',parameters('DeploymentID'))]",
-    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
-    "subnetRef": "[concat(variables('vnetID'),'/subnets/','subnet')]",
-    "labvm": "[concat('LabVM-',parameters('DeploymentID'))]",
+    "networkSecurityGroupName": "[concat('nsg', parameters('DeploymentID'))]",
+    "virtualNetworkName": "[concat('vnet', parameters('DeploymentID'))]",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+    "subnetRef": "[concat(variables('vnetID'), '/subnets/', 'subnet')]",
+    "labvm": "[concat('LabVM-', parameters('DeploymentID'))]",
 
     "publicIpAddressName": "[concat('labvmip', uniqueString(resourceGroup().id))]",
     "networkInterfaceName": "[concat('nic-', parameters('DeploymentID'))]",
@@ -144,13 +144,22 @@
       "type": "Microsoft.Compute/virtualMachines",
       "apiVersion": "2022-03-01",
       "location": "[variables('location')]",
+
+      "plan": {
+        "name": "kali-2026-1",
+        "publisher": "kali-linux",
+        "product": "kali"
+      },
+
       "dependsOn": [
         "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
       ],
+
       "properties": {
         "hardwareProfile": {
           "vmSize": "[variables('vmSize')]"
         },
+
         "osProfile": {
           "computerName": "[variables('labvm')]",
           "adminUsername": "[parameters('adminUsername')]",
@@ -159,6 +168,7 @@
             "disablePasswordAuthentication": false
           }
         },
+
         "storageProfile": {
           "osDisk": {
             "createOption": "FromImage",
@@ -167,13 +177,15 @@
             },
             "diskSizeGB": "[variables('disksizeinGB')]"
           },
+
           "imageReference": {
             "publisher": "kali-linux",
             "offer": "kali",
-            "sku": "kali",
+            "sku": "kali-2026-1",
             "version": "latest"
           }
         },
+
         "networkProfile": {
           "networkInterfaces": [
             {
@@ -190,13 +202,15 @@
       "type": "String",
       "value": "[parameters('DeploymentID')]"
     },
+
     "VM Admin Username": {
       "type": "String",
       "value": "[parameters('adminUsername')]"
     },
+
     "Linux DNS Name": {
       "type": "String",
-      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpAddressName'))).dnsSettings.fqdn]"
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))).dnsSettings.fqdn]"
     }
   }
 }
