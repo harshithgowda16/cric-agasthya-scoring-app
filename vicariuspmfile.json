@@ -26,7 +26,7 @@
     "resetUserPassword": {
       "value": "V1ctf909$dot"
     },
-"kaliImageId": {
+    "kaliImageId": {
       "value": "/subscriptions/672d1b16-4852-4afb-b44f-613647a90f19/resourceGroups/cloudlabs-mgmt-images/providers/Microsoft.Compute/galleries/Vicarius/images/kali-attacker-img-def/versions/latest"
     },
     "ubuntuImageId": {
@@ -67,6 +67,12 @@
     },
     "vm3AdminPassword": {
       "value": "V1ctf909$dot"
+    },
+    "msfListenerPortStart": {
+      "value": "4444"
+    },
+    "msfListenerPortEnd": {
+      "value": "4444"
     }
   }
 }
