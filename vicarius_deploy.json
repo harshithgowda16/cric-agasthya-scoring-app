@@ -23,7 +23,9 @@
     "vm2AdminUsername": { "type": "string", "defaultValue": "vdoom" },
     "vm2AdminPassword": { "type": "securestring", "defaultValue": "V1ctf909$dot" },
     "vm3AdminUsername": { "type": "string", "defaultValue": "vAnquish" },
-    "vm3AdminPassword": { "type": "securestring", "defaultValue": "V1ctf909$dot" }
+    "vm3AdminPassword": { "type": "securestring", "defaultValue": "V1ctf909$dot" },
+    "msfListenerPortStart": { "type": "string", "defaultValue": "4444" },
+    "msfListenerPortEnd": { "type": "string", "defaultValue": "4444" }
   },
   "variables": {
     "AzureSubscriptionID": "[subscription().subscriptionId]",
@@ -49,7 +51,8 @@
     "virtualNetworkName": "vnet",
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
     "subnetRef": "[concat(variables('vnetID'), '/subnets/subnet')]",
-    "adminUsername": "labuser"
+    "adminUsername": "labuser",
+    "msfListenerPortRange": "[concat(parameters('msfListenerPortStart'), '-', parameters('msfListenerPortEnd'))]"
   },
   "resources": [
     {
@@ -83,7 +86,8 @@
           { "name": "default-allow-ssh", "properties": { "priority": 110, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "22" } },
           { "name": "default-allow-http", "properties": { "priority": 120, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "80" } },
           { "name": "default-allow-https", "properties": { "priority": 130, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "443" } },
-          { "name": "default-allow-rdp", "properties": { "priority": 140, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "3389" } }
+          { "name": "default-allow-rdp", "properties": { "priority": 140, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "3389" } },
+          { "name": "allow-msf-handler", "properties": { "priority": 150, "protocol": "Tcp", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "[variables('msfListenerPortRange')]", "description": "Allows Meterpreter/Metasploit reverse-handler callbacks to reach Kali when exploit traffic traverses the public IP path (AllowVnetInBound already covers private-IP traffic within the VNet)." } }
         ]
       }
     },
@@ -276,19 +280,19 @@
   ],
   "outputs": {
     "Deployment ID": { "type": "string", "value": "[parameters('DeploymentID')]" },
-    
+
     "VM1 Name": { "type": "string", "value": "[variables('vm1Name')]" },
     "VM1 Admin Username": { "type": "string", "value": "[parameters('vm1AdminUsername')]" },
     "VM1 Admin Password": { "type": "string", "value": "[parameters('vm1AdminPassword')]" },
     "VM1 DNS Name": { "type": "string", "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip1'))).dnsSettings.fqdn]" },
     "VM1 Private IP": { "type": "string", "value": "10.10.10.10" },
-    
+
     "VM2 Name": { "type": "string", "value": "[variables('vm2Name')]" },
     "VM2 Admin Username": { "type": "string", "value": "[parameters('vm2AdminUsername')]" },
     "VM2 Admin Password": { "type": "string", "value": "[parameters('vm2AdminPassword')]" },
     "VM2 DNS Name": { "type": "string", "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip2'))).dnsSettings.fqdn]" },
     "VM2 Private IP": { "type": "string", "value": "10.10.10.20" },
-    
+
     "VM3 Name": { "type": "string", "value": "[variables('vm3Name')]" },
     "VM3 Admin Username": { "type": "string", "value": "[parameters('vm3AdminUsername')]" },
     "VM3 Admin Password": { "type": "string", "value": "[parameters('vm3AdminPassword')]" },
