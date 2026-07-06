@@ -87,7 +87,7 @@
           { "name": "default-allow-http", "properties": { "priority": 120, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "80" } },
           { "name": "default-allow-https", "properties": { "priority": 130, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "443" } },
           { "name": "default-allow-rdp", "properties": { "priority": 140, "protocol": "TCP", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "3389" } },
-          { "name": "allow-msf-handler", "properties": { "priority": 150, "protocol": "Tcp", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "*", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "[variables('msfListenerPortRange')]", "description": "Allows MSF reverse-handler callbacks to Kali over the public IP path." } }
+          { "name": "allow-msf-handler", "properties": { "priority": 150, "protocol": "Tcp", "access": "Allow", "direction": "Inbound", "sourceAddressPrefix": "10.10.10.0/24", "sourcePortRange": "*", "destinationAddressPrefix": "*", "destinationPortRange": "[variables('msfListenerPortRange')]", "description": "MSF reverse-handler callbacks, VNet-scoped only." } }
         ]
       }
     },
