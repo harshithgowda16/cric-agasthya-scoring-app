@@ -1,0 +1,63 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "virtualMachineSize": {
+      "value": "Standard_F4s_v2"
+    },
+    "winimageid": {
+      "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/winimgdef-gen/versions/0.0.3"
+    },
+    "linimageid": {
+      "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/linuximgdef/versions/0.0.1"
+    },
+    "windiskSizeGB": {
+      "value": "128"
+    },
+    "lindiskSizeGB": {
+      "value": "128"
+    },
+    "diskType": {
+      "value": "StandardSSD_LRS"
+    },
+    "publicIpAddressType": {
+      "value": "Dynamic"
+    },
+    "resetUserPassword": {
+      "value": "prtg4training"
+    },    
+    "vmAdminUserName": {
+      "value": "Training"
+    },
+    "vmAdminPassword": {
+      "value": "Mypassword!123"
+    },
+    "vmAdminUserName1": {
+      "value": "training"
+    },
+    "vmAdminPassword1": {
+      "value": "prtg4training"
+    },
+    "trainerUserName": {
+      "value": "trainer"
+    },
+    "trainerUserPassword": {
+      "value": "Password.!!1"
+    },
+    "DeploymentID": {
+      "value": "GET-DEPLOYMENT-ID"
+    },
+    "AzureUserName": {
+      "value": "GET-AZUSER-UPN"
+    },
+    "AzurePassword": {
+      "value": "GET-AZUSER-PASSWORD"
+    },
+    "ODLID": {
+      "value": "GET-ODL-ID"
+    },
+    "InstallCloudLabsShadow": {
+      "value": "yes"
+    }
+  }
+}
