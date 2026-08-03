@@ -423,5 +423,5 @@
     "type": "string",
     "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName1'))).ipConfigurations[0].properties.privateIPAddress]"
   }
-}
+ }
 }
