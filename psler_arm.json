@@ -14,7 +14,7 @@
     "linimageid2": {
       "type": "string",
       "metadata": {
-        "description": "Image reference for IPCLine1 VM (sharedimagegallary/images/IPCLine1VM-image-OT-lab)"
+        "description": "Image reference for IPCLine1 VM (sharedimagegallary/images/IPCLine1VM-image-OT-lab). NOTE: this is a SPECIALIZED image, so no osProfile is supplied for this VM - login credentials are whatever was baked into the image when it was captured."
       }
     },
     "publicIpAddressType": {
@@ -45,10 +45,16 @@
       "type": "securestring"
     },
     "vmAdminUserName2": {
-      "type": "string"
+      "type": "string",
+      "metadata": {
+        "description": "Not applied to the VM (specialized image) - kept only in case you want to display it in outputs for reference."
+      }
     },
     "vmAdminPassword2": {
-      "type": "securestring"
+      "type": "securestring",
+      "metadata": {
+        "description": "Not applied to the VM (specialized image) - kept only in case you want to display it in outputs for reference."
+      }
     },
     "trainerUserName": {
       "type": "string"
@@ -86,11 +92,11 @@
         "description": "Resource group containing the shared hub VNet (paesslerLab-vNet-<location>) that every student spoke peers to."
       }
     },
-    "studentVnetAddressPrefix": {
+    "studentVnetBaseOctets": {
       "type": "string",
-      "defaultValue": "10.3.0.0/24",
+      "defaultValue": "10.50",
       "metadata": {
-        "description": "Address space for this student's isolated spoke VNet. Safe to reuse the same range across students since spokes are never peered to each other."
+        "description": "First two octets for student spoke VNets (e.g. '10.50'). The third octet is derived per-deployment from DeploymentID to avoid VnetAddressSpaceOverlapsWithAlreadyPeeredVnet errors against other networks already peered to the hub. IMPORTANT: do NOT override this to '10.3' - that block is already used by a peered vnet (paesslerLab-vNet-germanywestcentral). If 10.50.x.0/24 also collides, pick another unused /16 such as '10.60'."
       }
     }
   },
@@ -102,11 +108,17 @@
     "hubVirtualNetworkName": "[concat('paesslerLab-vNet-', variables('location'))]",
     "hubVirtualNetworkId": "[resourceId(parameters('hubResourceGroupName'), 'Microsoft.Network/virtualNetworks', variables('hubVirtualNetworkName'))]",
     "studentVirtualNetworkName": "[concat('student-vnet-', parameters('DeploymentID'))]",
+    "studentVnetThirdOctet": "[string(mod(int(parameters('DeploymentID')), 250))]",
+    "studentVnetAddressPrefix": "[concat(parameters('studentVnetBaseOctets'), '.', variables('studentVnetThirdOctet'), '.0/24')]",
+    "prtgPrivateIP": "[concat(parameters('studentVnetBaseOctets'), '.', variables('studentVnetThirdOctet'), '.10')]",
+    "ignitionPrivateIP": "[concat(parameters('studentVnetBaseOctets'), '.', variables('studentVnetThirdOctet'), '.11')]",
+    "ipclinePrivateIP": "[concat(parameters('studentVnetBaseOctets'), '.', variables('studentVnetThirdOctet'), '.12')]",
     "subnetName": "Subnet",
     "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('studentVirtualNetworkName'), variables('subnetName'))]",
     "spokeToHubPeeringName": "[concat(variables('studentVirtualNetworkName'), '/to-hub')]",
     "hubToSpokePeeringName": "[concat(variables('hubVirtualNetworkName'), '/to-', variables('studentVirtualNetworkName'))]",
     "winvirtualMachineName": "PRTG-Core-Server",
+    "winComputerName": "[toUpper(take(concat('PRTG', parameters('DeploymentID')), 15))]",
     "networkInterfaceName": "[concat(variables('winvirtualMachineName'), '-nic')]",
     "networkSecurityGroupName": "[concat(variables('winvirtualMachineName'), '-nsg')]",
     "publicIpAddressName": "[concat(variables('winvirtualMachineName'), '-pip')]",
@@ -148,14 +160,14 @@
       "properties": {
         "addressSpace": {
           "addressPrefixes": [
-            "[parameters('studentVnetAddressPrefix')]"
+            "[variables('studentVnetAddressPrefix')]"
           ]
         },
         "subnets": [
           {
             "name": "[variables('subnetName')]",
             "properties": {
-              "addressPrefix": "[parameters('studentVnetAddressPrefix')]"
+              "addressPrefix": "[variables('studentVnetAddressPrefix')]"
             }
           }
         ]
@@ -275,7 +287,7 @@
             "name": "prtgvm-pip",
             "properties": {
               "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "10.3.0.10",
+              "privateIPAddress": "[variables('prtgPrivateIP')]",
               "subnet": {
                 "id": "[variables('subnetRef')]"
               },
@@ -306,7 +318,7 @@
           "vmSize": "[parameters('virtualMachineSize')]"
         },
         "osProfile": {
-            "computerName": "[variables('winvirtualMachineName')]",
+            "computerName": "[variables('winComputerName')]",
             "adminUsername": "[parameters('vmAdminUserName')]",
             "adminPassword": "[parameters('vmAdminPassword')]",
             "windowsConfiguration": {
@@ -444,7 +456,7 @@
             "name": "linvm-pip",
             "properties": {
               "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "10.3.0.11",
+              "privateIPAddress": "[variables('ignitionPrivateIP')]",
               "subnet": {
                 "id": "[variables('subnetRef')]"
               },
@@ -565,7 +577,7 @@
             "name": "ipclinevm-pip",
             "properties": {
               "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "10.3.0.12",
+              "privateIPAddress": "[variables('ipclinePrivateIP')]",
               "subnet": {
                 "id": "[variables('subnetRef')]"
               },
@@ -594,14 +606,6 @@
       "properties": {
         "hardwareProfile": {
           "vmSize": "[parameters('virtualMachineSize')]"
-        },
-        "osProfile": {
-          "computerName": "ipcline1",
-          "adminUsername": "[parameters('vmAdminUserName2')]",
-          "adminPassword": "[parameters('vmAdminPassword2')]",
-          "linuxConfiguration": {
-            "disablePasswordAuthentication": false
-          }
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -686,13 +690,9 @@
     "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName2'))).dnsSettings.fqdn]",
     "type": "string"
   },
-  "IPCLine1 Username": {
+  "IPCLine1 Credentials Note": {
     "type": "string",
-    "value": "[parameters('vmAdminUserName2')]"
-  },
-  "IPCLine1 Password": {
-    "type": "string",
-    "value": "[parameters('vmAdminPassword2')]"
+    "value": "Specialized image - login credentials are whatever was baked into the image at capture time, not the vmAdminUserName2/vmAdminPassword2 parameters."
   },
   "IPCLine1 Private IP": {
     "type": "string",
