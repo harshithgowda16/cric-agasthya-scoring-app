@@ -698,9 +698,13 @@
     "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName2'))).dnsSettings.fqdn]",
     "type": "string"
   },
-  "IPCLine1 Credentials Note": {
+  "IPCLine1 Username": {
     "type": "string",
-    "value": "Specialized image - login credentials are whatever was baked into the image at capture time, not the vmAdminUserName2/vmAdminPassword2 parameters."
+    "value": "[parameters('vmAdminUserName1')]"
+  },
+  "IPCLine1 Password": {
+    "type": "string",
+    "value": "[parameters('vmAdminPassword1')]"
   },
   "IPCLine1 Private IP": {
     "type": "string",
