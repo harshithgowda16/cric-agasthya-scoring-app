@@ -6,10 +6,10 @@
       "value": "Standard_F4s_v2"
     },
     "winimageid": {
-      "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/winimgdef-gen/versions/0.0.3"
+      "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/winimgdef-gen/versions/latest"
     },
     "linimageid": {
-      "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/linuximgdef/versions/0.0.1"
+      "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/linuximgdef/versions/latest"
     },
     "linimageid2": {
       "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/IPCLine1VM-image-OT-lab/versions/latest"
