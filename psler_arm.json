@@ -89,14 +89,14 @@
       "type": "string",
       "defaultValue": "paessler-prod-vnet",
       "metadata": {
-        "description": "Resource group containing the shared hub VNet (paesslerLab-vNet-<location>) that every student spoke peers to."
+        "description": "Resource group containing the pre-existing shared VNet (paesslerLab-vNet-<location>) that all lab VMs are placed into directly. This VNet carries the S2S VPN connection to the customer's on-prem network, so the VMs must live inside it rather than in a peered spoke."
       }
     },
     "studentVnetFirstOctet": {
       "type": "string",
       "defaultValue": "10",
       "metadata": {
-        "description": "First octet for student spoke VNets. Second and third octets are both derived per-deployment from DeploymentID (giving ~50,000 possible /24 blocks) to avoid VnetAddressSpaceOverlapsWithAlreadyPeeredVnet errors when many deployments in this tenant peer to the same hub concurrently. IMPORTANT: do not hand-override the derived octets with a fixed value (e.g. '10.3') - that block is already used by a peered vnet (paesslerLab-vNet-germanywestcentral)."
+        "description": "NO LONGER USED. Retained only so existing lab profiles that still pass this parameter do not fail with an unsupported-parameter error. VMs are now attached to the pre-existing hub VNet and receive dynamic private IPs from its address space; no per-deployment spoke VNet is created."
       }
     }
   },
@@ -105,19 +105,9 @@
     "AzureSubscriptionID": "[subscription().subscriptionId]",
     "AzureTenantID": "[subscription().tenantId]",
     "location": "[resourceGroup().location]",
-    "hubVirtualNetworkName": "[concat('paesslerLab-vNet-', variables('location'))]",
-    "hubVirtualNetworkId": "[resourceId(parameters('hubResourceGroupName'), 'Microsoft.Network/virtualNetworks', variables('hubVirtualNetworkName'))]",
-    "studentVirtualNetworkName": "[concat('student-vnet-', parameters('DeploymentID'))]",
-    "studentVnetSecondOctet": "[string(add(50, mod(div(int(parameters('DeploymentID')), 250), 200)))]",
-    "studentVnetThirdOctet": "[string(mod(int(parameters('DeploymentID')), 250))]",
-    "studentVnetAddressPrefix": "[concat(parameters('studentVnetFirstOctet'), '.', variables('studentVnetSecondOctet'), '.', variables('studentVnetThirdOctet'), '.0/24')]",
-    "prtgPrivateIP": "[concat(parameters('studentVnetFirstOctet'), '.', variables('studentVnetSecondOctet'), '.', variables('studentVnetThirdOctet'), '.10')]",
-    "ignitionPrivateIP": "[concat(parameters('studentVnetFirstOctet'), '.', variables('studentVnetSecondOctet'), '.', variables('studentVnetThirdOctet'), '.11')]",
-    "ipclinePrivateIP": "[concat(parameters('studentVnetFirstOctet'), '.', variables('studentVnetSecondOctet'), '.', variables('studentVnetThirdOctet'), '.12')]",
+    "virtualNetworkName": "[concat('paesslerLab-vNet-', variables('location'))]",
     "subnetName": "Subnet",
-    "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('studentVirtualNetworkName'), variables('subnetName'))]",
-    "spokeToHubPeeringName": "[concat(variables('studentVirtualNetworkName'), '/to-hub')]",
-    "hubToSpokePeeringName": "[concat(variables('hubVirtualNetworkName'), '/to-', variables('studentVirtualNetworkName'))]",
+    "subnetRef": "[resourceId(parameters('hubResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
     "winvirtualMachineName": "PRTG-Core-Server",
     "winComputerName": "[toUpper(take(concat('PRTG', parameters('DeploymentID')), 15))]",
     "networkInterfaceName": "[concat(variables('winvirtualMachineName'), '-nic')]",
@@ -152,76 +142,6 @@
         }
       },
       "type": "Microsoft.Resources/deployments"
-    },
-    {
-      "type": "Microsoft.Network/virtualNetworks",
-      "name": "[variables('studentVirtualNetworkName')]",
-      "apiVersion": "2020-08-01",
-      "location": "[variables('location')]",
-      "properties": {
-        "addressSpace": {
-          "addressPrefixes": [
-            "[variables('studentVnetAddressPrefix')]"
-          ]
-        },
-        "subnets": [
-          {
-            "name": "[variables('subnetName')]",
-            "properties": {
-              "addressPrefix": "[variables('studentVnetAddressPrefix')]"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
-      "name": "[variables('spokeToHubPeeringName')]",
-      "apiVersion": "2020-08-01",
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', variables('studentVirtualNetworkName'))]"
-      ],
-      "properties": {
-        "allowVirtualNetworkAccess": true,
-        "allowForwardedTraffic": false,
-        "allowGatewayTransit": false,
-        "useRemoteGateways": false,
-        "remoteVirtualNetwork": {
-          "id": "[variables('hubVirtualNetworkId')]"
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Resources/deployments",
-      "name": "[concat('hubPeering-', parameters('DeploymentID'))]",
-      "apiVersion": "2021-04-01",
-      "resourceGroup": "[parameters('hubResourceGroupName')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', variables('studentVirtualNetworkName'))]"
-      ],
-      "properties": {
-        "mode": "Incremental",
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "resources": [
-            {
-              "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
-              "name": "[variables('hubToSpokePeeringName')]",
-              "apiVersion": "2020-08-01",
-              "properties": {
-                "allowVirtualNetworkAccess": true,
-                "allowForwardedTraffic": false,
-                "allowGatewayTransit": false,
-                "useRemoteGateways": false,
-                "remoteVirtualNetwork": {
-                  "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('studentVirtualNetworkName'))]"
-                }
-              }
-            }
-          ]
-        }
-      }
     },
     {
       "type": "Microsoft.Network/networkSecurityGroups",
@@ -287,8 +207,7 @@
           {
             "name": "prtgvm-pip",
             "properties": {
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[variables('prtgPrivateIP')]",
+              "privateIPAllocationMethod": "Dynamic",
               "subnet": {
                 "id": "[variables('subnetRef')]"
               },
@@ -304,8 +223,7 @@
       },
       "dependsOn": [
         "[concat('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName'))]",
-        "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]",
-        "[resourceId('Microsoft.Network/virtualNetworks', variables('studentVirtualNetworkName'))]"
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]"
       ]
     },
     {
@@ -456,8 +374,7 @@
           {
             "name": "linvm-pip",
             "properties": {
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[variables('ignitionPrivateIP')]",
+              "privateIPAllocationMethod": "Dynamic",
               "subnet": {
                 "id": "[variables('subnetRef')]"
               },
@@ -473,8 +390,7 @@
       },
       "dependsOn": [
         "[concat('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName1'))]",
-        "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName1'))]",
-        "[resourceId('Microsoft.Network/virtualNetworks', variables('studentVirtualNetworkName'))]"
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName1'))]"
       ]
     },
     {
@@ -577,8 +493,7 @@
           {
             "name": "ipclinevm-pip",
             "properties": {
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[variables('ipclinePrivateIP')]",
+              "privateIPAllocationMethod": "Dynamic",
               "subnet": {
                 "id": "[variables('subnetRef')]"
               },
@@ -594,8 +509,7 @@
       },
       "dependsOn": [
         "[concat('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName2'))]",
-        "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName2'))]",
-        "[resourceId('Microsoft.Network/virtualNetworks', variables('studentVirtualNetworkName'))]"
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName2'))]"
       ]
     },
     {
