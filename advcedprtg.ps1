@@ -1,0 +1,39 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "adminUsername": {
+            "value": "labuser"
+        },
+        "adminPassword": {
+            "value": "GEN-PASSWORD"
+        },
+        "AzureUserName": {
+            "value": "GET-AZUSER-UPN"
+        },
+        "AzurePassword": {
+            "value": "GET-AZUSER-PASSWORD"
+        },
+        "ODLID": {
+            "value": "GET-ODL-ID"
+        },
+        "DeploymentID": {
+            "value": "GET-DEPLOYMENT-ID"
+        },
+        "trainerUserName": {
+            "value": "trainer"
+        },
+        "trainerUserPassword": {
+            "value": "Password.1!!"
+        },
+        "prtg1ImageId": {
+            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/Three_Windows_Servers_prtg-core-01/versions/latest"
+        },
+        "prtg2ImageId": {
+            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/Three_Windows_Servers_prtg-core-02/versions/latest"
+        },
+        "rpImageId": {
+            "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/Three_Windows_Servers_RP/versions/latest"
+        }
+    }
+}
