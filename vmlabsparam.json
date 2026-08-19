@@ -62,11 +62,14 @@
         "existingVnetResourceGroupName": {
             "value": "GET-EXISTING-VNET-RG"
         },
-        "enableRdpPort": {
-            "value": "ENABLE-RDP-PORT"
+        "vnetAddressPrefix": {
+            "value": "10.0.0.0/16"
         },
-        "enableSshPort": {
-            "value": "ENABLE-SSH-PORT"
+        "vmSubnetPrefix": {
+            "value": "10.0.1.0/24"
+        },
+        "containerSubnetPrefix": {
+            "value": "GET-CONTAINER-SUBNET-PREFIX"
         },
         "vmOSDiskSizeGB": {
             "value": "GET-VM-DISK-SIZE"
@@ -89,11 +92,14 @@
         "DeploymentID": {
             "value": "GET-DEPLOYMENT-ID"
         },
+        "trainerUserName": {
+            "value": "trainer"
+        },
+        "trainerUserPassword": {
+            "value": "GEN-PASSWORD"
+        },
         "vmSecurityType": {
             "value": "GET-VM-CUSTOM-IMAGE-SECURITY-TYPE"
-        },
-        "containerSubnetPrefix": {
-            "value": "10.0.2.0/24"
         }
     }
 }
