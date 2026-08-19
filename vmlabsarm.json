@@ -2,7 +2,7 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "metadata": {
-        "description": "CloudLabs - Attendee Windows VM with Linux Container Gateway Support. Creates/provisions VNet with container-subnet for Guacamole Linux VM."
+        "description": "CloudLabs - Attendee Windows VM with container-subnet support for both new and existing VNets."
     },
     "parameters": {
         "vmNamePefix": {
@@ -106,9 +106,14 @@
             }
         },
         "virtualNetworkNewOrExisting": {
+            "defaultValue": "new",
+            "allowedValues": [
+                "new",
+                "existing"
+            ],
             "type": "string",
             "metadata": {
-                "description": "This parameter determines whether or not a new virtual network should be provisioned. New network will be provisioned only if Advance networking is not enabled"
+                "description": "This parameter determines whether or not a new virtual network should be provisioned."
             }
         },
         "existingVirtualNetworkName": {
@@ -132,16 +137,25 @@
                 "description": "Provide name of the resource group for the existing virtual network"
             }
         },
-        "enableRdpPort": {
+        "vnetAddressPrefix": {
+            "defaultValue": "10.0.0.0/16",
             "type": "string",
             "metadata": {
-                "description": "Allows RDP port to be opened via NSG"
+                "description": "VNet address space (any private range). Used only when virtualNetworkNewOrExisting is 'new'."
             }
         },
-        "enableSshPort": {
+        "vmSubnetPrefix": {
+            "defaultValue": "10.0.1.0/24",
             "type": "string",
             "metadata": {
-                "description": "Allows SSH port to be opened via NSG"
+                "description": "CIDR for the private Windows subnet (vm-subnet). Used only when virtualNetworkNewOrExisting is 'new'."
+            }
+        },
+        "containerSubnetPrefix": {
+            "defaultValue": "10.0.2.0/24",
+            "type": "string",
+            "metadata": {
+                "description": "CIDR for the container subnet. IMPORTANT: Must be a free, non-overlapping range in the existing VNet."
             }
         },
         "vmOSDiskSizeGB": {
@@ -158,6 +172,7 @@
             }
         },
         "provisionNonAdminUser": {
+            "defaultValue": "no",
             "type": "string",
             "metadata": {
                 "description": "Determines whether or not non admin users should be provisioned."
@@ -188,36 +203,35 @@
                 "description": "Unique numeric ID of the individual user/student instance"
             }
         },
+        "trainerUserName": {
+            "type": "string",
+            "metadata": {
+                "description": "This parameter is required for trainer shadow functionality"
+            }
+        },
+        "trainerUserPassword": {
+            "type": "string",
+            "metadata": {
+                "description": "This parameter is required for trainer shadow functionality"
+            }
+        },
         "vmSecurityType": {
             "type": "string",
             "metadata": {
                 "description": "This parameter is required for security type"
             }
-        },
-        "containerSubnetPrefix": {
-            "defaultValue": "10.0.2.0/24",
-            "type": "string",
-            "metadata": {
-                "description": "CIDR for the container subnet. IMPORTANT: Must be a free, non-overlapping range in the existing VNet."
-            }
         }
     },
     "variables": {
-        "newVirtualNetworkName": "[concat('VirtualNetwork-', parameters('DeploymentID'))]",
-        "newVnetAddressPrefix": "10.0.0.0/16",
-        "newVnetSubnetName": "Subnet",
-        "newVnetSubnetPrefix": "10.0.0.0/24",
+        "Enable-CloudLabsEmbeddedShadow": "[concat(' -trainerUserName ', parameters('trainerUserName'), ' -trainerUserPassword ', parameters('trainerUserPassword'))]",
+        "newVirtualNetworkName": "[concat('cloudlabs-vnet-', parameters('DeploymentID'))]",
+        "newVnetSubnetName": "vm-subnet",
         "containerSubnetName": "container-subnet",
         "networkInterfaceName": "[concat('NIC-', parameters('DeploymentID'))]",
         "region": "[resourceGroup().location]",
         "networkSecurityGroupName": "[concat('NSG-', parameters('DeploymentID'))]",
-        "networkSecurityGroupNameBoth": "[concat('NSG-', parameters('DeploymentID'))]",
         "vmName": "[concat(parameters('vmNamePefix'), parameters('DeploymentID'))]",
-        "publicIpAddressName": "[concat('PublicIP-', parameters('DeploymentID'))]",
-        "publicIpAddressDNSName": "[concat('labvmdns', uniqueString(resourceGroup().id))]",
-        "iPAllocationMethod": "Static",
-        "ipAddressSku": "Standard",
-        "iptier": "Regional",
+        "internalDnsLabel": "[toLower(variables('vmName'))]",
         "osdiskname": "[concat('labvm-OSDisk-', parameters('DeploymentID'))]",
         "vmPasswordAdmin": "[if(and(equals(parameters('useSamePasswordOrNot'), 'no'), equals(parameters('provisionNonAdminUser'), 'no')), parameters('genAdminPassword'), parameters('vmAdminPassword'))]",
         "vmPasswordNonAdmin": "[if(equals(parameters('useSamePasswordOrNot'), 'yes'), parameters('vmNonAdminPassword'), parameters('genNonAdminPassword'))]",
@@ -245,14 +259,11 @@
         "SetVmSecurityType": {
             "securityType": "[if(or(equals(parameters('vmSecurityType'), 'TrustedLaunchSupported'), equals(parameters('vmSecurityType'), 'ConfidentialVmSupported'), equals(parameters('vmSecurityType'), 'TrustedLaunchAndConfidentialVmSupported'), equals(parameters('vmSecurityType'), 'None')), '', parameters('vmSecurityType'))]"
         },
-        "nsgRuleCheck": "[if(and(equals(parameters('enableRdpPort'), 'yes'), equals(parameters('enableSshPort'), 'yes')), 'both', '')]",
-        "nsgIdBoth": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('networkSecurityGroupNameBoth'))]",
-        "nsgId": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('networkSecurityGroupName'))]",
-        "scriptName": "user-setup.sh",
-        "scriptClose": "'",
-        "customScriptCommand": "su -c'sh ",
-        "customScriptExtensionURI": "https://experienceazure.blob.core.windows.net/vmaas/s/arm-templates/scripts/user-setup.sh",
+        "customScriptExtensionURI": "https://experienceazure.blob.core.windows.net/vmaas/s/arm-templates/scripts/psscript.ps1",
+        "cloudlabsExtensionURI": "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1",
+        
         "isExistingVnet": "[equals(parameters('virtualNetworkNewOrExisting'), 'existing')]",
+        
         "crossRgContainerSubnetDeploymentName": "[concat('add-container-subnet-', parameters('existingVirtualNetworkName'), '-', parameters('DeploymentID'))]"
     },
     "resources": [
@@ -302,19 +313,19 @@
             "name": "[variables('newVirtualNetworkName')]",
             "location": "[variables('region')]",
             "dependsOn": [
-                "[if(equals(variables('nsgRuleCheck'), 'both'), variables('networkSecurityGroupNameBoth'), variables('networkSecurityGroupName'))]"
+                "[variables('networkSecurityGroupName')]"
             ],
             "properties": {
                 "addressSpace": {
                     "addressPrefixes": [
-                        "[variables('newVnetAddressPrefix')]"
+                        "[parameters('vnetAddressPrefix')]"
                     ]
                 },
                 "subnets": [
                     {
                         "name": "[variables('newVnetSubnetName')]",
                         "properties": {
-                            "addressPrefix": "[variables('newVnetSubnetPrefix')]",
+                            "addressPrefix": "[parameters('vmSubnetPrefix')]",
                             "privateEndpointNetworkPolicies": "Enabled",
                             "privateLinkServiceNetworkPolicies": "Enabled"
                         }
@@ -331,88 +342,6 @@
             }
         },
         {
-            "condition": "[equals(variables('nsgRuleCheck'), 'both')]",
-            "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "2015-06-15",
-            "name": "[variables('networkSecurityGroupNameBoth')]",
-            "location": "[variables('region')]",
-            "properties": {
-                "securityRules": [
-                    {
-                        "name": "allow-SSH",
-                        "properties": {
-                            "description": "Allow SSH",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "22",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1000,
-                            "direction": "Inbound"
-                        }
-                    },
-                    {
-                        "name": "allow-rdp",
-                        "properties": {
-                            "description": "Allow RDP",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "3389",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1100,
-                            "direction": "Inbound"
-                        }
-                    },
-                    {
-                        "name": "allow-8888",
-                        "properties": {
-                            "description": "Allow port 8888",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "8888",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1200,
-                            "direction": "Inbound"
-                        }
-                    },
-                    {
-                        "name": "allow-8787",
-                        "properties": {
-                            "description": "Allow port 8787",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "8787",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1300,
-                            "direction": "Inbound"
-                        }
-                    },
-                    {
-                        "name": "allow-80",
-                        "properties": {
-                            "description": "Allow HTTP",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "80",
-                            "sourceAddressPrefix": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1400,
-                            "direction": "Inbound"
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            "condition": "[not(equals(variables('nsgRuleCheck'), 'both'))]",
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2015-06-15",
             "name": "[variables('networkSecurityGroupName')]",
@@ -420,13 +349,13 @@
             "properties": {
                 "securityRules": [
                     {
-                        "name": "[if(equals(parameters('enableSshPort'), 'yes'), 'default-allow-SSH', 'default-allow-RDP')]",
+                        "name": "allow-rdp-from-container-subnet",
                         "properties": {
-                            "description": "[if(equals(parameters('enableSshPort'), 'yes'), 'Allow SSH', 'Allow RDP')]",
+                            "description": "Allow RDP only from the Guacamole container subnet (private)",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
-                            "destinationPortRange": "[if(equals(parameters('enableSshPort'), 'yes'), '22', '3389')]",
-                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "3389",
+                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]",
                             "destinationAddressPrefix": "*",
                             "access": "Allow",
                             "priority": 1000,
@@ -434,13 +363,13 @@
                         }
                     },
                     {
-                        "name": "allow-8888",
+                        "name": "allow-8888-from-container-subnet",
                         "properties": {
-                            "description": "Allow port 8888",
+                            "description": "Allow port 8888 only from the container subnet",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "8888",
-                            "sourceAddressPrefix": "*",
+                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]",
                             "destinationAddressPrefix": "*",
                             "access": "Allow",
                             "priority": 1100,
@@ -448,13 +377,13 @@
                         }
                     },
                     {
-                        "name": "allow-8787",
+                        "name": "allow-8787-from-container-subnet",
                         "properties": {
-                            "description": "Allow port 8787",
+                            "description": "Allow port 8787 only from the container subnet",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "8787",
-                            "sourceAddressPrefix": "*",
+                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]",
                             "destinationAddressPrefix": "*",
                             "access": "Allow",
                             "priority": 1200,
@@ -462,36 +391,34 @@
                         }
                     },
                     {
-                        "name": "allow-80",
+                        "name": "allow-80-from-container-subnet",
                         "properties": {
-                            "description": "Allow HTTP",
+                            "description": "Allow HTTP only from the container subnet",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "80",
-                            "sourceAddressPrefix": "*",
+                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]",
                             "destinationAddressPrefix": "*",
                             "access": "Allow",
                             "priority": 1400,
                             "direction": "Inbound"
                         }
+                    },
+                    {
+                        "name": "allow-SSH-from-container-subnet",
+                        "properties": {
+                            "description": "Allow SSH only from the container subnet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 1500,
+                            "direction": "Inbound"
+                        }
                     }
                 ]
-            }
-        },
-        {
-            "type": "Microsoft.Network/publicIPAddresses",
-            "apiVersion": "2018-01-01",
-            "name": "[variables('publicIpAddressName')]",
-            "location": "[variables('region')]",
-            "sku": {
-                "name": "[variables('ipAddressSku')]",
-                "tier": "[variables('iptier')]"
-            },
-            "properties": {
-                "publicIPAllocationMethod": "[variables('iPAllocationMethod')]",
-                "dnsSettings": {
-                    "domainNameLabel": "[concat(variables('publicIpAddressDNSName'))]"
-                }
             }
         },
         {
@@ -500,9 +427,8 @@
             "name": "[variables('networkInterfaceName')]",
             "location": "[variables('region')]",
             "dependsOn": [
-                "[if(equals(variables('nsgRuleCheck'), 'both'), variables('networkSecurityGroupNameBoth'), variables('networkSecurityGroupName'))]",
-                "[if(variables('isExistingVnet'), variables('crossRgContainerSubnetDeploymentName'), variables('newVirtualNetworkName'))]",
-                "[variables('publicIpAddressName')]"
+                "[variables('networkSecurityGroupName')]",
+                "[if(variables('isExistingVnet'), variables('crossRgContainerSubnetDeploymentName'), variables('newVirtualNetworkName'))]"
             ],
             "properties": {
                 "ipConfigurations": [
@@ -514,15 +440,15 @@
                                     resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('existingVirtualNetworkName'), parameters('existingVnetSubnetName')), 
                                     resourceId('Microsoft.Network/virtualNetworks/subnets', variables('newVirtualNetworkName'), variables('newVnetSubnetName')))]"
                             },
-                            "privateIPAllocationMethod": "Dynamic",
-                            "publicIpAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpAddressName'))]"
-                            }
+                            "privateIPAllocationMethod": "Dynamic"
                         }
                     }
                 ],
                 "networkSecurityGroup": {
-                    "id": "[if(equals(variables('nsgRuleCheck'), 'both'), variables('nsgIdBoth'), variables('nsgId'))]"
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('networkSecurityGroupName'))]"
+                },
+                "dnsSettings": {
+                    "internalDnsNameLabel": "[variables('internalDnsLabel')]"
                 }
             }
         },
@@ -566,22 +492,26 @@
         },
         {
             "type": "Microsoft.Compute/virtualMachines/extensions",
-            "name": "[concat(variables('vmName'), '/', 'nonadminExtension')]",
-            "apiVersion": "2018-06-01",
+            "apiVersion": "2015-06-15",
+            "name": "[concat(variables('vmName'), '/', 'winExtension')]",
             "location": "[variables('region')]",
             "dependsOn": [
                 "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
             ],
+            "tags": {},
             "properties": {
-                "publisher": "Microsoft.Azure.Extensions",
-                "type": "CustomScript",
-                "typeHandlerVersion": "2.0",
+                "publisher": "Microsoft.Compute",
+                "type": "CustomScriptExtension",
+                "typeHandlerVersion": "1.10",
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "[variables('customScriptExtensionURI')]"
-                    ],
-                    "commandToExecute": "[concat(variables('customScriptCommand'),' ',variables('scriptName'), ' \"', parameters('vmCustomImageOsState'), '\" \"', parameters('vmAdminUserName'), '\" \"', variables('vmPasswordAdmin'), '\" \"', parameters('provisionNonAdminUser'), '\" \"', parameters('vmNonAdminUserName'), '\" \"', variables('vmPasswordNonAdmin'), '\"', variables('scriptClose'))]"
+                        "[variables('customScriptExtensionURI')]",
+                        "[variables('cloudlabsExtensionURI')]"
+                    ]
+                },
+                "protectedSettings": {
+                    "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File s/arm-templates/scripts/psscript.ps1 ', variables('Enable-CloudLabsEmbeddedShadow'), ' ', parameters('vmCustomImageOsState'), ' ', parameters('vmAdminUserName'), ' ', variables('vmPasswordAdmin'), ' ', parameters('provisionNonAdminUser'), ' ', parameters('vmNonAdminUserName'), ' ', variables('vmPasswordNonAdmin'), ' ', parameters('vmImageType'))]"
                 }
             }
         }
@@ -589,7 +519,7 @@
     "outputs": {
         "DNS Name": {
             "type": "string",
-            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpAddressName'))).dnsSettings.fqdn]"
+            "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))).dnsSettings.internalFqdn]"
         },
         "Admin Username": {
             "type": "string",
@@ -615,13 +545,29 @@
             "type": "string",
             "value": "[variables('outputPassword')]"
         },
+        "Trainer Username": {
+            "type": "string",
+            "value": "[parameters('trainerUserName')]"
+        },
+        "Trainer Password": {
+            "type": "string",
+            "value": "[parameters('trainerUserPassword')]"
+        },
+        "deploymentId": {
+            "type": "string",
+            "value": "[parameters('DeploymentID')]"
+        },
+        "LabVM Name": {
+            "type": "string",
+            "value": "[variables('vmName')]"
+        },
+        "windowsPrivateIp": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))).ipConfigurations[0].properties.privateIPAddress]"
+        },
         "vnetName": {
             "type": "string",
             "value": "[if(variables('isExistingVnet'), parameters('existingVirtualNetworkName'), variables('newVirtualNetworkName'))]"
-        },
-        "vnetResourceGroup": {
-            "type": "string",
-            "value": "[if(variables('isExistingVnet'), parameters('existingVnetResourceGroupName'), resourceGroup().name)]"
         },
         "containerSubnetName": {
             "type": "string",
@@ -639,17 +585,9 @@
                 resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('existingVirtualNetworkName'), parameters('existingVnetSubnetName')), 
                 resourceId('Microsoft.Network/virtualNetworks/subnets', variables('newVirtualNetworkName'), variables('newVnetSubnetName')))]"
         },
-        "deploymentId": {
+        "vnetResourceGroup": {
             "type": "string",
-            "value": "[parameters('DeploymentID')]"
-        },
-        "LabVM Name": {
-            "type": "string",
-            "value": "[variables('vmName')]"
-        },
-        "windowsPrivateIp": {
-            "type": "string",
-            "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))).ipConfigurations[0].properties.privateIPAddress]"
+            "value": "[if(variables('isExistingVnet'), parameters('existingVnetResourceGroupName'), resourceGroup().name)]"
         }
     }
 }
