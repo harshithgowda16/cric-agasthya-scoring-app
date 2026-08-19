@@ -2,224 +2,121 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "metadata": {
-        "description": "CloudLabs - Attendee Windows VM (same functionality as prod 2.json). Creates a VNet 'cloudlabs-vnet-<DeploymentID>' with a private 'vm-subnet' (Windows VM, NO public IP) and a 'container-subnet' for the Guacamole Linux container VM deployed separately by the Linux container ARM (in another RG). When virtualNetworkNewOrExisting is 'existing' (advanced networking labs), the 'container-subnet' is added to the existing/shared vnet via a cross-resource-group nested deployment, since that vnet does not have this subnet by default. RDP and lab ports are allowed only from the container subnet over the private network. Outputs feed the Linux container ARM."
+        "description": "CloudLabs - Attendee Windows VM with cross-RG subnet support."
     },
     "parameters": {
         "vmNamePefix": {
             "type": "string",
-            "defaultValue": "LabVM",
-            "metadata": {
-                "description": "The name of your Virtual Machine."
-            },
-            "minLength": 4
+            "defaultValue": "LabVM"
         },
         "virtualMachineSize": {
-            "type": "string",
-            "metadata": {
-                "description": "Provide Azure VM SKU based on your requirements"
-            }
+            "type": "string"
         },
         "vmImageType": {
-            "type": "string",
-            "metadata": {
-                "description": "This parameter determines the type of VM image used for the VM instance that is, marketplace or custom"
-            }
+            "type": "string"
         },
         "vmCustomImageOsState": {
-            "type": "string",
-            "metadata": {
-                "description": "This parameter determines the state of the custom image that is, generalized or specialized"
-            }
+            "type": "string"
         },
         "vmCustomImageResourceID": {
-            "type": "string",
-            "metadata": {
-                "description": "This parameter is required if the vmImageType is customImage type "
-            }
+            "type": "string"
         },
         "vmMarketplaceImageSku": {
-            "type": "string",
-            "metadata": {
-                "description": "provide the Azure Marketplace Image details or resource ID of the custom Image"
-            }
+            "type": "string"
         },
         "vmMarketplaceImageOffer": {
-            "type": "string",
-            "metadata": {
-                "description": "Provide a vm image offer of your lab instance"
-            }
+            "type": "string"
         },
         "vmMarketplaceImagePublisher": {
-            "type": "string",
-            "metadata": {
-                "description": "Provide a vm image publisher of your lab instance"
-            }
+            "type": "string"
         },
         "imagePlanRequired": {
-            "type": "string",
-            "metadata": {
-                "description": "Is a Marketplace Image plan required"
-            }
+            "type": "string"
         },
         "imagePlanName": {
             "defaultValue": "PLAN_NAME",
-            "type": "string",
-            "metadata": {
-                "description": "Provide a Marketplace Image plan name if exists"
-            }
+            "type": "string"
         },
         "imagePlanPublisher": {
-            "type": "string",
-            "metadata": {
-                "description": "Provide a Marketplace Image plan publisher name if exists"
-            }
+            "type": "string"
         },
         "imagePlanProduct": {
             "defaultValue": "PLAN_PRODUCT",
-            "type": "string",
-            "metadata": {
-                "description": "Provide a Marketplace Image plan product name if exists"
-            }
+            "type": "string"
         },
         "useSamePasswordOrNot": {
-            "type": "string",
-            "metadata": {
-                "description": "Provide yes if you want to use same password for all users else no"
-            }
+            "type": "string"
         },
         "genAdminPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Generates a unique strong password for the administrator account of your lab instance"
-            }
+            "type": "securestring"
         },
         "vmAdminUserName": {
-            "type": "string",
-            "metadata": {
-                "description": "Provide name for administrator account of your lab"
-            }
+            "type": "string"
         },
         "vmAdminPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Create a strong password for the administrator account of your lab instance"
-            }
+            "type": "securestring"
         },
         "virtualNetworkNewOrExisting": {
             "defaultValue": "new",
-            "allowedValues": [
-                "new",
-                "existing"
-            ],
-            "type": "string",
-            "metadata": {
-                "description": "This parameter is determines whether or not a new virtual network should be provisioned. New network will be provisioned only if Advance networking is not enabled"
-            }
+            "allowedValues": ["new", "existing"],
+            "type": "string"
         },
         "existingVirtualNetworkName": {
             "defaultValue": "VirtualNetwork",
-            "type": "string",
-            "metadata": {
-                "description": "Provide name of the existing network"
-            }
+            "type": "string"
         },
         "existingVnetSubnetName": {
             "defaultValue": "default",
-            "type": "string",
-            "metadata": {
-                "description": "Provide name of the subnet in the existing network to be used"
-            }
+            "type": "string"
         },
         "existingVnetResourceGroupName": {
             "defaultValue": "[resourceGroup().name]",
-            "type": "string",
-            "metadata": {
-                "description": "Provide name of the resource group for the existing virtual network"
-            }
+            "type": "string"
         },
         "vnetAddressPrefix": {
             "defaultValue": "10.0.0.0/16",
-            "type": "string",
-            "metadata": {
-                "description": "VNet address space (any private range). Used only when virtualNetworkNewOrExisting is 'new'."
-            }
+            "type": "string"
         },
         "vmSubnetPrefix": {
             "defaultValue": "10.0.1.0/24",
-            "type": "string",
-            "metadata": {
-                "description": "CIDR for the private Windows subnet (vm-subnet). Used only when virtualNetworkNewOrExisting is 'new'."
-            }
+            "type": "string"
         },
         "containerSubnetPrefix": {
             "defaultValue": "10.0.2.0/24",
-            "type": "string",
-            "metadata": {
-                "description": "CIDR for the container subnet (container-subnet). RDP and lab ports to the Windows VM are allowed only from this range. IMPORTANT: when virtualNetworkNewOrExisting is 'existing' (advanced networking), this subnet is added to the shared/existing vnet, so this prefix MUST be a free, non-overlapping range within that existing vnet's address space - do not rely on the default in that scenario."
-            }
+            "type": "string"
         },
         "vmOSDiskSizeGB": {
             "defaultValue": "128",
-            "type": "string",
-            "metadata": {
-                "description": "Determines the size of the OS disk attached to the VM"
-            }
+            "type": "string"
         },
         "vmOsDiskType": {
-            "type": "string",
-            "metadata": {
-                "description": "Determines the type of OS disk for the virtual Machine"
-            }
+            "type": "string"
         },
         "provisionNonAdminUser": {
             "defaultValue": "no",
-            "type": "string",
-            "metadata": {
-                "description": "Determines whether or not non admin users should be provisioned."
-            }
+            "type": "string"
         },
         "vmNonAdminUserName": {
-            "type": "string",
-            "metadata": {
-                "description": "Provide name for non-administrator account for lab instance"
-            }
+            "type": "string"
         },
         "vmNonAdminPassword": {
             "type": "securestring",
-            "metadata": {
-                "description": "Provide a strong password for the non-administrator account of your lab instance"
-            },
             "minLength": 4
         },
         "genNonAdminPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Generates a unique strong password for the non-administrator account of your lab instance"
-            }
+            "type": "securestring"
         },
         "DeploymentID": {
-            "type": "string",
-            "metadata": {
-                "description": "Unqiue numeric ID of the indiviual user/student instance"
-            }
+            "type": "string"
         },
         "trainerUserName": {
-            "type": "string",
-            "metadata": {
-                "description": "This parameter is required for trainer shadow functionality"
-            }
+            "type": "string"
         },
         "trainerUserPassword": {
-            "type": "string",
-            "metadata": {
-                "description": "This parameter is required for trainer shadow functionality"
-            }
+            "type": "string"
         },
         "vmSecurityType": {
-            "type": "string",
-            "metadata": {
-                "description": "This parameter is required for security type"
-            }
+            "type": "string"
         }
     },
     "variables": {
@@ -261,7 +158,8 @@
         },
         "customScriptExtensionURI": "https://experienceazure.blob.core.windows.net/vmaas/s/arm-templates/scripts/psscript.ps1",
         "cloudlabsExtensionURI": "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1",
-        "crossRgContainerSubnetDeploymentName": "[concat('add-container-subnet-', parameters('existingVirtualNetworkName'))]"
+        "crossRgContainerSubnetDeploymentName": "[concat('add-container-subnet-', parameters('existingVirtualNetworkName'), '-', parameters('DeploymentID'))]",
+        "isExistingVnet": "[equals(parameters('virtualNetworkNewOrExisting'), 'existing')]"
     },
     "resources": [
         {
@@ -278,7 +176,33 @@
             }
         },
         {
-            "condition": "[equals(parameters('virtualNetworkNewOrExisting'), 'new')]",
+            "condition": "[variables('isExistingVnet')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2020-10-01",
+            "name": "[variables('crossRgContainerSubnetDeploymentName')]",
+            "resourceGroup": "[parameters('existingVnetResourceGroupName')]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [
+                        {
+                            "type": "Microsoft.Network/virtualNetworks/subnets",
+                            "apiVersion": "2020-06-01",
+                            "name": "[concat(parameters('existingVirtualNetworkName'), '/', variables('containerSubnetName'))]",
+                            "properties": {
+                                "addressPrefix": "[parameters('containerSubnetPrefix')]",
+                                "privateEndpointNetworkPolicies": "Enabled",
+                                "privateLinkServiceNetworkPolicies": "Enabled"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "condition": "[not(variables('isExistingVnet'))]",
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2020-06-01",
             "name": "[variables('newVirtualNetworkName')]",
@@ -310,32 +234,6 @@
                         }
                     }
                 ]
-            }
-        },
-        {
-            "condition": "[equals(parameters('virtualNetworkNewOrExisting'), 'existing')]",
-            "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2020-10-01",
-            "name": "[variables('crossRgContainerSubnetDeploymentName')]",
-            "resourceGroup": "[parameters('existingVnetResourceGroupName')]",
-            "properties": {
-                "mode": "Incremental",
-                "template": {
-                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-                    "contentVersion": "1.0.0.0",
-                    "resources": [
-                        {
-                            "type": "Microsoft.Network/virtualNetworks/subnets",
-                            "apiVersion": "2020-06-01",
-                            "name": "[concat(parameters('existingVirtualNetworkName'), '/', variables('containerSubnetName'))]",
-                            "properties": {
-                                "addressPrefix": "[parameters('containerSubnetPrefix')]",
-                                "privateEndpointNetworkPolicies": "Enabled",
-                                "privateLinkServiceNetworkPolicies": "Enabled"
-                            }
-                        }
-                    ]
-                }
             }
         },
         {
@@ -425,8 +323,7 @@
             "location": "[variables('region')]",
             "dependsOn": [
                 "[variables('networkSecurityGroupName')]",
-                "[variables('newVirtualNetworkName')]",
-                "[variables('crossRgContainerSubnetDeploymentName')]"
+                "[if(variables('isExistingVnet'), variables('crossRgContainerSubnetDeploymentName'), variables('newVirtualNetworkName'))]"
             ],
             "properties": {
                 "ipConfigurations": [
@@ -434,7 +331,7 @@
                         "name": "ipconfig1",
                         "properties": {
                             "subnet": {
-                                "id": "[if(equals(parameters('virtualNetworkNewOrExisting'),'new'), resourceId('Microsoft.Network/virtualNetworks/subnets', variables('newVirtualNetworkName'), variables('newVnetSubnetName')), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets/', parameters('existingVirtualNetworkName'), parameters('existingVnetSubnetName')))]"
+                                "id": "[if(variables('isExistingVnet'), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('existingVirtualNetworkName'), parameters('existingVnetSubnetName')), resourceId('Microsoft.Network/virtualNetworks/subnets', variables('newVirtualNetworkName'), variables('newVnetSubnetName')))]"
                             },
                             "privateIPAllocationMethod": "Dynamic"
                         }
@@ -563,7 +460,7 @@
         },
         "vnetName": {
             "type": "string",
-            "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newVirtualNetworkName'), parameters('existingVirtualNetworkName'))]"
+            "value": "[if(variables('isExistingVnet'), parameters('existingVirtualNetworkName'), variables('newVirtualNetworkName'))]"
         },
         "containerSubnetName": {
             "type": "string",
@@ -571,15 +468,15 @@
         },
         "containerSubnetId": {
             "type": "string",
-            "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), resourceId('Microsoft.Network/virtualNetworks/subnets', variables('newVirtualNetworkName'), variables('containerSubnetName')), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('existingVirtualNetworkName'), variables('containerSubnetName')))]"
+            "value": "[if(variables('isExistingVnet'), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('existingVirtualNetworkName'), variables('containerSubnetName')), resourceId('Microsoft.Network/virtualNetworks/subnets', variables('newVirtualNetworkName'), variables('containerSubnetName')))]"
         },
         "vmSubnetId": {
             "type": "string",
-            "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), resourceId('Microsoft.Network/virtualNetworks/subnets', variables('newVirtualNetworkName'), variables('newVnetSubnetName')), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('existingVirtualNetworkName'), parameters('existingVnetSubnetName')))]"
+            "value": "[if(variables('isExistingVnet'), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('existingVirtualNetworkName'), parameters('existingVnetSubnetName')), resourceId('Microsoft.Network/virtualNetworks/subnets', variables('newVirtualNetworkName'), variables('newVnetSubnetName')))]"
         },
         "vnetResourceGroup": {
             "type": "string",
-            "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), resourceGroup().name, parameters('existingVnetResourceGroupName'))]"
+            "value": "[if(variables('isExistingVnet'), parameters('existingVnetResourceGroupName'), resourceGroup().name)]"
         }
     }
 }
