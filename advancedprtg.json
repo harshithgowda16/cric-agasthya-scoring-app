@@ -69,9 +69,9 @@
     "publicIpAddressName2": "[concat('winvm3ip', uniqueString(resourceGroup().id))]",
     "networkSecurityGroupName2": "winvm3nsg",
     "vmStorageAccountContainerName": "vhds",
-    "virtualNetworkName": "vnet",
-    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
-    "subnetRef": "[concat(variables('vnetID'),'/subnets/','subnet')]"
+    "subnetName": "Subnet",
+    "virtualNetworkName": "[concat('paesslerLab-vNet-', variables('location'))]",
+    "subnetRef": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/paessler-prod-vnet/providers/Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'), '/subnets/', variables('subnetName'))]"
   },
   "resources": [
     {
@@ -354,7 +354,6 @@
       "name": "[variables('networkInterfaceName1')]",
       "location": "[variables('location')]",
       "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
         "[concat('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName1'))]",
         "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName1'))]"
       ],
@@ -366,8 +365,7 @@
               "subnet": {
                 "id": "[variables('subnetRef')]"
               },
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "10.0.0.5",
+              "privateIPAllocationMethod": "Dynamic",
               "publicIpAddress": {
                 "id": "[resourceId(resourceGroup().name,'Microsoft.Network/publicIpAddresses', variables('publicIpAddressName1'))]"
               }
@@ -451,7 +449,6 @@
       "name": "[variables('networkInterfaceName2')]",
       "location": "[variables('location')]",
       "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
         "[concat('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName2'))]",
         "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName2'))]"
       ],
@@ -463,8 +460,7 @@
               "subnet": {
                 "id": "[variables('subnetRef')]"
               },
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "10.0.0.6",
+              "privateIPAllocationMethod": "Dynamic",
               "publicIpAddress": {
                 "id": "[resourceId(resourceGroup().name,'Microsoft.Network/publicIpAddresses', variables('publicIpAddressName2'))]"
               }
@@ -477,33 +473,11 @@
       }
     },
     {
-      "name": "[variables('virtualNetworkName')]",
-      "type": "Microsoft.Network/virtualNetworks",
-      "apiVersion": "2018-02-01",
-      "location": "[resourceGroup().location]",
-      "properties": {
-        "addressSpace": {
-          "addressPrefixes": [
-            "10.0.0.0/16"
-          ]
-        },
-        "subnets": [
-          {
-            "name": "subnet",
-            "properties": {
-              "addressPrefix": "10.0.0.0/24"
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "[variables('networkInterfaceName')]",
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2016-09-01",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
         "[concat('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName'))]",
         "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]"
       ],
@@ -515,8 +489,7 @@
               "subnet": {
                 "id": "[variables('subnetRef')]"
               },
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "10.0.0.4",
+              "privateIPAllocationMethod": "Dynamic",
               "publicIpAddress": {
                 "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]"
               }
