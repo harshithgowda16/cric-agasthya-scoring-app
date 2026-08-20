@@ -6,61 +6,61 @@
             "value": "LabVM"
         },
         "virtualMachineSize": {
-            "value": "GET-VM-SIZE"
+            "value": "Standard_B2s"
         },
         "vmImageType": {
-            "value": "GET-VM-IMAGE-TYPE"
+            "value": "marketplace"
         },
         "vmCustomImageOsState": {
-            "value": "GET-VM-CUSTOM-IMAGE-OS-STATE"
+            "value": "Generalized"
         },
         "vmCustomImageResourceID": {
-            "value": "GET-VM-CUSTOM-IMAGE-RESOURCE-ID"
+            "value": ""
         },
         "vmMarketplaceImageSku": {
-            "value": "GET-VM-MARKETPLACE-IMAGE-SKU"
+            "value": "2019-datacenter"
         },
         "vmMarketplaceImageOffer": {
-            "value": "GET-VM-MARKETPLACE-IMAGE-OFFER"
+            "value": "WindowsServer"
         },
         "vmMarketplaceImagePublisher": {
-            "value": "GET-VM-MARKETPLACE-IMAGE-PUBLISHER"
+            "value": "MicrosoftWindowsServer"
         },
         "imagePlanRequired": {
-            "value": "USE-MARKETPLACE-IMAGE-PLAN"
+            "value": "no"
         },
         "imagePlanName": {
-            "value": "GET-VM-MARKETPLACE-IMAGE-PLAN"
+            "value": "PLAN_NAME"
         },
         "imagePlanPublisher": {
-            "value": "GET-VM-MARKETPLACE-IMAGE-PUBLISHER"
+            "value": "PLAN_PUBLISHER"
         },
         "imagePlanProduct": {
-            "value": "GET-VM-MARKETPLACE-IMAGE-OFFER"
+            "value": "PLAN_PRODUCT"
         },
         "useSamePasswordOrNot": {
-            "value": "USE-SAME-VM-PASSWORD-FOR-ALL"
+            "value": "yes"
         },
         "genAdminPassword": {
-            "value": "GEN-PASSWORD"
+            "value": "Password.1!!"
         },
         "vmAdminUserName": {
-            "value": "GET-VM-USERNAME"
+            "value": "azureuser"
         },
         "vmAdminPassword": {
-            "value": "GET-VM-PASSWORD"
+            "value": "Password.1!!"
         },
         "virtualNetworkNewOrExisting": {
-            "value": "GET-VNET-CONFIG"
+            "value": "new"
         },
         "existingVirtualNetworkName": {
-            "value": "GET-EXISTING-VNET-NAME"
+            "value": "VirtualNetwork"
         },
         "existingVnetSubnetName": {
-            "value": "GET-EXISTING-VNET-SUBNET"
+            "value": "default"
         },
         "existingVnetResourceGroupName": {
-            "value": "GET-EXISTING-VNET-RG"
+            "value": "ODL-5-181418"
         },
         "vnetAddressPrefix": {
             "value": "10.0.0.0/16"
@@ -69,37 +69,37 @@
             "value": "10.0.1.0/24"
         },
         "containerSubnetPrefix": {
-            "value": "GET-CONTAINER-SUBNET-PREFIX"
+            "value": "10.0.2.0/24"
         },
         "vmOSDiskSizeGB": {
-            "value": "GET-VM-DISK-SIZE"
+            "value": "128"
         },
         "vmOsDiskType": {
-            "value": "GET-VM-DISK-TYPE"
+            "value": "StandardSSD_LRS"
         },
         "provisionNonAdminUser": {
-            "value": "ENABLE-NONADMIN-VM-ACCOUNT"
+            "value": "no"
         },
         "vmNonAdminUserName": {
-            "value": "GET-NONADMIN-VM-USERNAME"
+            "value": "student"
         },
         "vmNonAdminPassword": {
-            "value": "GET-NONADMIN-VM-PASSWORD"
+            "value": "Password.1!!"
         },
         "genNonAdminPassword": {
-            "value": "GEN-PASSWORD"
+            "value": "Password.1!!"
         },
         "DeploymentID": {
-            "value": "GET-DEPLOYMENT-ID"
+            "value": "181418"
         },
         "trainerUserName": {
             "value": "trainer"
         },
         "trainerUserPassword": {
-            "value": "GEN-PASSWORD"
+            "value": "Password.1!!"
         },
         "vmSecurityType": {
-            "value": "GET-VM-CUSTOM-IMAGE-SECURITY-TYPE"
+            "value": "TrustedLaunch"
         }
     }
 }
