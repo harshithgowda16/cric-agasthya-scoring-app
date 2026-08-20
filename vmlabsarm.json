@@ -261,9 +261,7 @@
         },
         "customScriptExtensionURI": "https://experienceazure.blob.core.windows.net/vmaas/s/arm-templates/scripts/psscript.ps1",
         "cloudlabsExtensionURI": "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1",
-        
         "isExistingVnet": "[equals(parameters('virtualNetworkNewOrExisting'), 'existing')]",
-        
         "crossRgContainerSubnetDeploymentName": "[concat('add-container-subnet-', parameters('existingVirtualNetworkName'), '-', parameters('DeploymentID'))]"
     },
     "resources": [
