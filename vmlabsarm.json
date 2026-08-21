@@ -127,13 +127,6 @@
                 "description": "Provide name of the subnet in the existing network to be used"
             }
         },
-        "existingVnetContainerSubnetName": {
-            "defaultValue": "ContainerSubnet",
-            "type": "string",
-            "metadata": {
-                "description": "Provide name of the container subnet in the existing network (used by the browser-based RDP gateway VM). Required when virtualNetworkNewOrExisting is 'existing'."
-            }
-        },
         "existingVnetResourceGroupName": {
             "defaultValue": "cloudlabs-mgmt-networking",
             "type": "string",
@@ -212,11 +205,9 @@
         "newVnetAddressPrefix": "10.0.0.0/16",
         "newVnetSubnetName": "Subnet",
         "newVnetSubnetPrefix": "10.0.0.0/24",
-        "newContainerSubnetName": "ContainerSubnet",
-        "newContainerSubnetPrefix": "10.0.1.0/24",
         "resolvedVnetName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newVirtualNetworkName'), parameters('existingVirtualNetworkName'))]",
         "resolvedVnetResourceGroupName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), resourceGroup().name, parameters('existingVnetResourceGroupName'))]",
-        "resolvedContainerSubnetName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newContainerSubnetName'), parameters('existingVnetContainerSubnetName'))]",
+        "resolvedSubnetName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newVnetSubnetName'), parameters('existingVnetSubnetName'))]",
         "networkInterfaceName": "[concat('NIC-', parameters('DeploymentID'))]",
         "region": "[resourceGroup().location]",
         "networkSecurityGroupName": "[concat('NSG-', parameters('DeploymentID'))]",
@@ -290,14 +281,6 @@
                         "name": "[variables('newVnetSubnetName')]",
                         "properties": {
                             "addressPrefix": "[variables('newVnetSubnetPrefix')]",
-                            "privateEndpointNetworkPolicies": "Enabled",
-                            "privateLinkServiceNetworkPolicies": "Enabled"
-                        }
-                    },
-                    {
-                        "name": "[variables('newContainerSubnetName')]",
-                        "properties": {
-                            "addressPrefix": "[variables('newContainerSubnetPrefix')]",
                             "privateEndpointNetworkPolicies": "Enabled",
                             "privateLinkServiceNetworkPolicies": "Enabled"
                         }
@@ -542,7 +525,7 @@
         },
         "Container Subnet Name": {
             "type": "string",
-            "value": "[variables('resolvedContainerSubnetName')]"
+            "value": "[variables('resolvedSubnetName')]"
         }
     }
 }
