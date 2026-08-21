@@ -59,9 +59,6 @@
         "existingVnetSubnetName": {
             "value": "GET-EXISTING-VNET-SUBNET"
         },
-        "existingVnetContainerSubnetName": {
-            "value": "GET-EXISTING-VNET-CONTAINER-SUBNET"
-        },
         "existingVnetResourceGroupName": {
             "value": "cloudlabs-mgmt-networking"
         },
