@@ -124,7 +124,14 @@
             "defaultValue": "default",
             "type": "string",
             "metadata": {
-                "description": "Provide name of the subnet in the existing network to be used for the Lab VM"
+                "description": "Provide name of the subnet in the existing network to be used"
+            }
+        },
+        "existingVnetContainerSubnetName": {
+            "defaultValue": "ContainerSubnet",
+            "type": "string",
+            "metadata": {
+                "description": "Provide name of the container subnet in the existing network (used by the browser-based RDP gateway VM). Required when virtualNetworkNewOrExisting is 'existing'."
             }
         },
         "existingVnetResourceGroupName": {
@@ -132,59 +139,6 @@
             "type": "string",
             "metadata": {
                 "description": "Provide name of the resource group for the existing virtual network"
-            }
-        },
-        "vnetAddressPrefix": {
-            "type": "string",
-            "defaultValue": "10.0.0.0/16",
-            "metadata": {
-                "description": "Address space for the new virtual network. Only used when virtualNetworkNewOrExisting is 'new'."
-            }
-        },
-        "vmSubnetName": {
-            "type": "string",
-            "defaultValue": "vm-subnet",
-            "metadata": {
-                "description": "Name of the private Lab VM subnet created in the new virtual network. Only used when virtualNetworkNewOrExisting is 'new'."
-            }
-        },
-        "vmSubnetPrefix": {
-            "type": "string",
-            "defaultValue": "10.0.1.0/24",
-            "metadata": {
-                "description": "CIDR for the Lab VM subnet. Only used when virtualNetworkNewOrExisting is 'new'."
-            }
-        },
-        "containerSubnetName": {
-            "type": "string",
-            "defaultValue": "container-subnet",
-            "metadata": {
-                "description": "Name of the subnet reserved for the RDP-over-HTTPS gateway (Guacamole) VM, created alongside the Lab VM subnet in the same new virtual network. The companion container-vm template deploys into this subnet."
-            }
-        },
-        "containerSubnetPrefix": {
-            "type": "string",
-            "defaultValue": "10.0.2.0/24",
-            "metadata": {
-                "description": "CIDR for the gateway/container subnet. Only used when virtualNetworkNewOrExisting is 'new'."
-            }
-        },
-        "existingContainerSubnetName": {
-            "type": "string",
-            "defaultValue": "container-subnet",
-            "metadata": {
-                "description": "Name of the existing gateway/container subnet inside the existing virtual network. Used only when virtualNetworkNewOrExisting is 'existing' and restrictRdpToContainerSubnet is 'yes', so the RDP NSG rule can be scoped to that subnet's actual address range."
-            }
-        },
-        "restrictRdpToContainerSubnet": {
-            "type": "string",
-            "defaultValue": "yes",
-            "allowedValues": [
-                "yes",
-                "no"
-            ],
-            "metadata": {
-                "description": "If 'yes', inbound RDP (3389) on the Lab VM is scoped to the gateway/container subnet only (browser-based RDP-over-HTTPS architecture). If 'no', RDP is left open the same way earlier versions of this template behaved."
             }
         },
         "vmOSDiskSizeGB": {
@@ -255,11 +209,14 @@
     "variables": {
         "Enable-CloudLabsEmbeddedShadow": "[concat(' -trainerUserName ', parameters('trainerUserName'), ' -trainerUserPassword ', parameters('trainerUserPassword'))]",
         "newVirtualNetworkName": "[concat('VirtualNetwork-', parameters('DeploymentID'))]",
-        "newVnetAddressPrefix": "[parameters('vnetAddressPrefix')]",
-        "newVnetSubnetName": "[parameters('vmSubnetName')]",
-        "newVnetSubnetPrefix": "[parameters('vmSubnetPrefix')]",
-        "newContainerSubnetName": "[parameters('containerSubnetName')]",
-        "newContainerSubnetPrefix": "[parameters('containerSubnetPrefix')]",
+        "newVnetAddressPrefix": "10.0.0.0/16",
+        "newVnetSubnetName": "Subnet",
+        "newVnetSubnetPrefix": "10.0.0.0/24",
+        "newContainerSubnetName": "ContainerSubnet",
+        "newContainerSubnetPrefix": "10.0.1.0/24",
+        "resolvedVnetName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newVirtualNetworkName'), parameters('existingVirtualNetworkName'))]",
+        "resolvedVnetResourceGroupName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), resourceGroup().name, parameters('existingVnetResourceGroupName'))]",
+        "resolvedContainerSubnetName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newContainerSubnetName'), parameters('existingVnetContainerSubnetName'))]",
         "networkInterfaceName": "[concat('NIC-', parameters('DeploymentID'))]",
         "region": "[resourceGroup().location]",
         "networkSecurityGroupName": "[concat('NSG-', parameters('DeploymentID'))]",
@@ -358,11 +315,11 @@
                     {
                         "name": "default-allow-rdp",
                         "properties": {
-                            "description": "Allow RDP - scoped to the gateway/container subnet when restrictRdpToContainerSubnet is 'yes'",
+                            "description": "Allow RDP",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "3389",
-                            "sourceAddressPrefix": "[if(equals(parameters('restrictRdpToContainerSubnet'), 'no'), '*', if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), parameters('containerSubnetPrefix'), reference(resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('existingVirtualNetworkName'), parameters('existingContainerSubnetName')), '2020-06-01').addressPrefix))]",
+                            "sourceAddressPrefix": "*",
                             "destinationAddressPrefix": "*",
                             "access": "Allow",
                             "priority": 1000,
@@ -577,23 +534,15 @@
         },
         "VNet Name": {
             "type": "string",
-            "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newVirtualNetworkName'), parameters('existingVirtualNetworkName'))]"
+            "value": "[variables('resolvedVnetName')]"
         },
         "VNet Resource Group": {
             "type": "string",
-            "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), resourceGroup().name, parameters('existingVnetResourceGroupName'))]"
-        },
-        "VM Subnet Name": {
-            "type": "string",
-            "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newVnetSubnetName'), parameters('existingVnetSubnetName'))]"
+            "value": "[variables('resolvedVnetResourceGroupName')]"
         },
         "Container Subnet Name": {
             "type": "string",
-            "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newContainerSubnetName'), parameters('existingContainerSubnetName'))]"
-        },
-        "Private IP": {
-            "type": "string",
-            "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))).ipConfigurations[0].properties.privateIPAddress]"
+            "value": "[variables('resolvedContainerSubnetName')]"
         }
     }
 }
