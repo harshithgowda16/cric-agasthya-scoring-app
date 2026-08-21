@@ -63,10 +63,7 @@
             "value": "GET-EXISTING-VNET-CONTAINER-SUBNET"
         },
         "existingVnetResourceGroupName": {
-            "value": "GET-EXISTING-VNET-RG"
-        },
-        "existingVnetLocation": {
-            "value": "GET-EXISTING-VNET-LOCATION"
+            "value": "cloudlabs-mgmt-networking"
         },
         "vmOSDiskSizeGB": {
             "value": "GET-VM-DISK-SIZE"
