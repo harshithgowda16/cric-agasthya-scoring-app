@@ -135,17 +135,10 @@
             }
         },
         "existingVnetResourceGroupName": {
-            "defaultValue": "[resourceGroup().name]",
+            "defaultValue": "cloudlabs-mgmt-networking",
             "type": "string",
             "metadata": {
-                "description": "Provide name of the resource group for the existing virtual network"
-            }
-        },
-        "existingVnetLocation": {
-            "defaultValue": "[resourceGroup().location]",
-            "type": "string",
-            "metadata": {
-                "description": "Azure region of the existing virtual network (existingVirtualNetworkName). All networked resources (NSG, NIC, Public IP, VM) must deploy into this same region as the VNet they attach to. This is a fixed property of that shared VNet, set once when Advanced Networking is configured for the lab - get it with: az network vnet show --name <vnet> --resource-group <rg> --query location -o tsv. Only used when virtualNetworkNewOrExisting is 'existing'."
+                "description": "Resource group for the existing virtual network. Fixed at 'cloudlabs-mgmt-networking' - only existingVirtualNetworkName needs to be provided when virtualNetworkNewOrExisting is 'existing'."
             }
         },
         "vmOSDiskSizeGB": {
@@ -225,7 +218,7 @@
         "resolvedVnetResourceGroupName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), resourceGroup().name, parameters('existingVnetResourceGroupName'))]",
         "resolvedContainerSubnetName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newContainerSubnetName'), parameters('existingVnetContainerSubnetName'))]",
         "networkInterfaceName": "[concat('NIC-', parameters('DeploymentID'))]",
-        "region": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'existing'), parameters('existingVnetLocation'), resourceGroup().location)]",
+        "region": "[resourceGroup().location]",
         "networkSecurityGroupName": "[concat('NSG-', parameters('DeploymentID'))]",
         "vmName": "[concat(parameters('vmNamePefix'), parameters('DeploymentID'))]",
         "publicIpAddressName": "[concat('PublicIP-', parameters('DeploymentID'))]",
