@@ -65,6 +65,9 @@
         "existingVnetResourceGroupName": {
             "value": "GET-EXISTING-VNET-RG"
         },
+        "existingVnetLocation": {
+            "value": "GET-EXISTING-VNET-LOCATION"
+        },
         "vmOSDiskSizeGB": {
             "value": "GET-VM-DISK-SIZE"
         },
