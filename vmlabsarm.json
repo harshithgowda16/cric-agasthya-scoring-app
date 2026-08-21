@@ -143,9 +143,8 @@
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2020-10-01",
             "name": "[concat('add-container-subnet-', parameters('DeploymentID'))]",
-            "location": "[variables('region')]",
             "resourceGroup": "[parameters('existingVnetResourceGroupName')]",
-            "comments": "Adds 'container-subnet' to the existing VNet as an additive child resource (does not touch other subnets already there). REQUIRES the identity running this deployment to have write access (e.g. Network Contributor) on existingVnetResourceGroupName.",
+            "comments": "Adds 'container-subnet' to the existing VNet as an additive child resource. NOTE: no 'location' property - RG-scope deployments must not have one (that is only for subscription/MG-scope deployments). REQUIRES write access (e.g. Network Contributor) on existingVnetResourceGroupName.",
             "properties": {
                 "mode": "Incremental",
                 "template": {
