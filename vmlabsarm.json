@@ -2,225 +2,60 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "metadata": {
-        "description": "CloudLabs - Attendee Windows VM (same functionality as prod 2.json). Creates a VNet 'cloudlabs-vnet-<DeploymentID>' with a private 'vm-subnet' (Windows VM, NO public IP) and a 'container-subnet' for the Guacamole Linux container VM deployed separately by the Linux container ARM (in another RG). RDP and lab ports are allowed only from the container subnet over the private network. Outputs feed the Linux container ARM. FIX: when virtualNetworkNewOrExisting='existing' (Advanced Networking), a 'container-subnet' is now also added to the existing VNet via a cross-resource-group nested deployment, since the existing VNet is not guaranteed to already have one."
+        "description": "CloudLabs - Attendee Windows VM. Creates a VNet 'cloudlabs-vnet-<DeploymentID>' with 'vm-subnet' + 'container-subnet' when virtualNetworkNewOrExisting='new'. When 'existing', attaches the Windows VM to the passed-in existing subnet AND adds a 'container-subnet' into that existing VNet via a cross-resource-group nested deployment (existing VNets are not guaranteed to already have one). Outputs feed the Linux container ARM."
     },
     "parameters": {
         "vmNamePefix": {
             "type": "string",
             "defaultValue": "LabVM",
-            "metadata": {
-                "description": "The name of your Virtual Machine."
-            },
+            "metadata": { "description": "The name of your Virtual Machine." },
             "minLength": 4
         },
-        "virtualMachineSize": {
-            "type": "string",
-            "metadata": {
-                "description": "Provide Azure VM SKU based on your requirements"
-            }
-        },
-        "vmImageType": {
-            "type": "string",
-            "metadata": {
-                "description": "This parameter determines the type of VM image used for the VM instance that is, marketplace or custom"
-            }
-        },
-        "vmCustomImageOsState": {
-            "type": "string",
-            "metadata": {
-                "description": "This parameter determines the state of the custom image that is, generalized or specialized"
-            }
-        },
-        "vmCustomImageResourceID": {
-            "type": "string",
-            "metadata": {
-                "description": "This parameter is required if the vmImageType is customImage type "
-            }
-        },
-        "vmMarketplaceImageSku": {
-            "type": "string",
-            "metadata": {
-                "description": "provide the Azure Marketplace Image details or resource ID of the custom Image"
-            }
-        },
-        "vmMarketplaceImageOffer": {
-            "type": "string",
-            "metadata": {
-                "description": "Provide a vm image offer of your lab instance"
-            }
-        },
-        "vmMarketplaceImagePublisher": {
-            "type": "string",
-            "metadata": {
-                "description": "Provide a vm image publisher of your lab instance"
-            }
-        },
-        "imagePlanRequired": {
-            "type": "string",
-            "metadata": {
-                "description": "Is a Marketplace Image plan required"
-            }
-        },
-        "imagePlanName": {
-            "defaultValue": "PLAN_NAME",
-            "type": "string",
-            "metadata": {
-                "description": "Provide a Marketplace Image plan name if exists"
-            }
-        },
-        "imagePlanPublisher": {
-            "type": "string",
-            "metadata": {
-                "description": "Provide a Marketplace Image plan publisher name if exists"
-            }
-        },
-        "imagePlanProduct": {
-            "defaultValue": "PLAN_PRODUCT",
-            "type": "string",
-            "metadata": {
-                "description": "Provide a Marketplace Image plan product name if exists"
-            }
-        },
-        "useSamePasswordOrNot": {
-            "type": "string",
-            "metadata": {
-                "description": "Provide yes if you want to use same password for all users else no"
-            }
-        },
-        "genAdminPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Generates a unique strong password for the administrator account of your lab instance"
-            }
-        },
-        "vmAdminUserName": {
-            "type": "string",
-            "metadata": {
-                "description": "Provide name for administrator account of your lab"
-            }
-        },
-        "vmAdminPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Create a strong password for the administrator account of your lab instance"
-            }
-        },
+        "virtualMachineSize": { "type": "string", "metadata": { "description": "Provide Azure VM SKU based on your requirements" } },
+        "vmImageType": { "type": "string", "metadata": { "description": "This parameter determines the type of VM image used for the VM instance that is, marketplace or custom" } },
+        "vmCustomImageOsState": { "type": "string", "metadata": { "description": "This parameter determines the state of the custom image that is, generalized or specialized" } },
+        "vmCustomImageResourceID": { "type": "string", "metadata": { "description": "This parameter is required if the vmImageType is customImage type " } },
+        "vmMarketplaceImageSku": { "type": "string", "metadata": { "description": "provide the Azure Marketplace Image details or resource ID of the custom Image" } },
+        "vmMarketplaceImageOffer": { "type": "string", "metadata": { "description": "Provide a vm image offer of your lab instance" } },
+        "vmMarketplaceImagePublisher": { "type": "string", "metadata": { "description": "Provide a vm image publisher of your lab instance" } },
+        "imagePlanRequired": { "type": "string", "metadata": { "description": "Is a Marketplace Image plan required" } },
+        "imagePlanName": { "defaultValue": "PLAN_NAME", "type": "string", "metadata": { "description": "Provide a Marketplace Image plan name if exists" } },
+        "imagePlanPublisher": { "type": "string", "metadata": { "description": "Provide a Marketplace Image plan publisher name if exists" } },
+        "imagePlanProduct": { "defaultValue": "PLAN_PRODUCT", "type": "string", "metadata": { "description": "Provide a Marketplace Image plan product name if exists" } },
+        "useSamePasswordOrNot": { "type": "string", "metadata": { "description": "Provide yes if you want to use same password for all users else no" } },
+        "genAdminPassword": { "type": "securestring", "metadata": { "description": "Generates a unique strong password for the administrator account of your lab instance" } },
+        "vmAdminUserName": { "type": "string", "metadata": { "description": "Provide name for administrator account of your lab" } },
+        "vmAdminPassword": { "type": "securestring", "metadata": { "description": "Create a strong password for the administrator account of your lab instance" } },
         "virtualNetworkNewOrExisting": {
             "defaultValue": "new",
-            "allowedValues": [
-                "new",
-                "existing"
-            ],
+            "allowedValues": ["new", "existing"],
             "type": "string",
-            "metadata": {
-                "description": "This parameter is determines whether or not a new virtual network should be provisioned. New network will be provisioned only if Advance networking is not enabled"
-            }
+            "metadata": { "description": "This parameter is determines whether or not a new virtual network should be provisioned. New network will be provisioned only if Advance networking is not enabled" }
         },
-        "existingVirtualNetworkName": {
-            "defaultValue": "VirtualNetwork",
-            "type": "string",
-            "metadata": {
-                "description": "Provide name of the existing network"
-            }
-        },
-        "existingVnetSubnetName": {
-            "defaultValue": "default",
-            "type": "string",
-            "metadata": {
-                "description": "Provide name of the subnet in the existing network to be used"
-            }
-        },
+        "existingVirtualNetworkName": { "defaultValue": "VirtualNetwork", "type": "string", "metadata": { "description": "Provide name of the existing network" } },
+        "existingVnetSubnetName": { "defaultValue": "default", "type": "string", "metadata": { "description": "Provide name of the subnet in the existing network to be used" } },
         "existingVnetResourceGroupName": {
             "defaultValue": "cloudlabs-mgmt-networking",
             "type": "string",
-            "metadata": {
-                "description": "Resource group for the existing/Advanced-Networking VNet. Defaults to 'cloudlabs-mgmt-networking' since that is the shared RG most existing VNets live in - but this default only applies if the parameter is omitted entirely. If your orchestrator explicitly passes a wrong RG name, this default is never reached; resolve the correct RG (with a live existence check + fallback) in the orchestrator before calling this deployment, since ARM template expressions cannot catch a 'resource not found' and retry against a different resource group themselves."
-            }
+            "metadata": { "description": "Resource group for the existing/Advanced-Networking VNet. Defaults to 'cloudlabs-mgmt-networking' - override if a lab uses a different one. Note this RG's own region has nothing to do with the VNet's actual region; see the 'vnetLocation' output." }
         },
-        "vnetAddressPrefix": {
-            "defaultValue": "10.0.0.0/16",
-            "type": "string",
-            "metadata": {
-                "description": "VNet address space (any private range)."
-            }
-        },
-        "vmSubnetPrefix": {
-            "defaultValue": "10.0.1.0/24",
-            "type": "string",
-            "metadata": {
-                "description": "CIDR for the private Windows subnet (vm-subnet)."
-            }
-        },
+        "vnetAddressPrefix": { "defaultValue": "10.0.0.0/16", "type": "string", "metadata": { "description": "VNet address space (any private range)." } },
+        "vmSubnetPrefix": { "defaultValue": "10.0.1.0/24", "type": "string", "metadata": { "description": "CIDR for the private Windows subnet (vm-subnet)." } },
         "containerSubnetPrefix": {
             "defaultValue": "10.0.2.0/24",
             "type": "string",
-            "metadata": {
-                "description": "CIDR for the container subnet (container-subnet). RDP and lab ports to the Windows VM are allowed only from this range. Also used when adding the container subnet to an EXISTING VNet - make sure this range doesn't overlap any subnet already present in that VNet."
-            }
+            "metadata": { "description": "CIDR for the container subnet (container-subnet). Also used when adding the container subnet to an EXISTING VNet - must fall within that VNet's address space and not overlap any subnet already present in it." }
         },
-        "vmOSDiskSizeGB": {
-            "defaultValue": "128",
-            "type": "string",
-            "metadata": {
-                "description": "Determines the size of the OS disk attached to the VM"
-            }
-        },
-        "vmOsDiskType": {
-            "type": "string",
-            "metadata": {
-                "description": "Determines the type of OS disk for the virtual Machine"
-            }
-        },
-        "provisionNonAdminUser": {
-            "defaultValue": "no",
-            "type": "string",
-            "metadata": {
-                "description": "Determines whether or not non admin users should be provisioned."
-            }
-        },
-        "vmNonAdminUserName": {
-            "type": "string",
-            "metadata": {
-                "description": "Provide name for non-administrator account for lab instance"
-            }
-        },
-        "vmNonAdminPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Provide a strong password for the non-administrator account of your lab instance"
-            },
-            "minLength": 4
-        },
-        "genNonAdminPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Generates a unique strong password for the non-administrator account of your lab instance"
-            }
-        },
-        "DeploymentID": {
-            "type": "string",
-            "metadata": {
-                "description": "Unqiue numeric ID of the indiviual user/student instance"
-            }
-        },
-        "trainerUserName": {
-            "type": "string",
-            "metadata": {
-                "description": "This parameter is required for trainer shadow functionality"
-            }
-        },
-        "trainerUserPassword": {
-            "type": "string",
-            "metadata": {
-                "description": "This parameter is required for trainer shadow functionality"
-            }
-        },
-        "vmSecurityType": {
-            "type": "string",
-            "metadata": {
-                "description": "This parameter is required for security type"
-            }
-        }
+        "vmOSDiskSizeGB": { "defaultValue": "128", "type": "string", "metadata": { "description": "Determines the size of the OS disk attached to the VM" } },
+        "vmOsDiskType": { "type": "string", "metadata": { "description": "Determines the type of OS disk for the virtual Machine" } },
+        "provisionNonAdminUser": { "defaultValue": "no", "type": "string", "metadata": { "description": "Determines whether or not non admin users should be provisioned." } },
+        "vmNonAdminUserName": { "type": "string", "metadata": { "description": "Provide name for non-administrator account for lab instance" } },
+        "vmNonAdminPassword": { "type": "securestring", "metadata": { "description": "Provide a strong password for the non-administrator account of your lab instance" }, "minLength": 4 },
+        "genNonAdminPassword": { "type": "securestring", "metadata": { "description": "Generates a unique strong password for the non-administrator account of your lab instance" } },
+        "DeploymentID": { "type": "string", "metadata": { "description": "Unqiue numeric ID of the indiviual user/student instance" } },
+        "trainerUserName": { "type": "string", "metadata": { "description": "This parameter is required for trainer shadow functionality" } },
+        "trainerUserPassword": { "type": "string", "metadata": { "description": "This parameter is required for trainer shadow functionality" } },
+        "vmSecurityType": { "type": "string", "metadata": { "description": "This parameter is required for security type" } }
     },
     "variables": {
         "Enable-CloudLabsEmbeddedShadow": "[concat(' -trainerUserName ', parameters('trainerUserName'), ' -trainerUserPassword ', parameters('trainerUserPassword'))]",
@@ -243,9 +78,7 @@
             "sku": "[parameters('vmMarketplaceImageSku')]",
             "version": "latest"
         },
-        "customImageID": {
-            "id": "[parameters('vmCustomImageResourceID')]"
-        },
+        "customImageID": { "id": "[parameters('vmCustomImageResourceID')]" },
         "osProfile": {
             "computerName": "[variables('vmName')]",
             "adminUsername": "[parameters('vmAdminUsername')]",
@@ -282,15 +115,9 @@
             "apiVersion": "2020-06-01",
             "name": "[variables('newVirtualNetworkName')]",
             "location": "[variables('region')]",
-            "dependsOn": [
-                "[variables('networkSecurityGroupName')]"
-            ],
+            "dependsOn": [ "[variables('networkSecurityGroupName')]" ],
             "properties": {
-                "addressSpace": {
-                    "addressPrefixes": [
-                        "[parameters('vnetAddressPrefix')]"
-                    ]
-                },
+                "addressSpace": { "addressPrefixes": [ "[parameters('vnetAddressPrefix')]" ] },
                 "subnets": [
                     {
                         "name": "[variables('newVnetSubnetName')]",
@@ -318,7 +145,7 @@
             "name": "[concat('add-container-subnet-', parameters('DeploymentID'))]",
             "location": "[variables('region')]",
             "resourceGroup": "[parameters('existingVnetResourceGroupName')]",
-            "comments": "FIX: the 'existing VNet' (Advanced Networking) path previously never created a container-subnet, so the Linux container VM's NIC could never attach to it. This nested, cross-resource-group deployment adds a 'container-subnet' child resource to the existing VNet without touching any of its other subnets (Incremental mode + child resource type = additive, not a full subnets-array overwrite).",
+            "comments": "Adds 'container-subnet' to the existing VNet as an additive child resource (does not touch other subnets already there). REQUIRES the identity running this deployment to have write access (e.g. Network Contributor) on existingVnetResourceGroupName.",
             "properties": {
                 "mode": "Incremental",
                 "template": {
@@ -329,9 +156,7 @@
                             "type": "Microsoft.Network/virtualNetworks/subnets",
                             "apiVersion": "2020-06-01",
                             "name": "[concat(parameters('existingVirtualNetworkName'), '/', variables('containerSubnetName'))]",
-                            "properties": {
-                                "addressPrefix": "[parameters('containerSubnetPrefix')]"
-                            }
+                            "properties": { "addressPrefix": "[parameters('containerSubnetPrefix')]" }
                         }
                     ]
                 }
@@ -348,70 +173,45 @@
                         "name": "allow-rdp-from-container-subnet",
                         "properties": {
                             "description": "Allow RDP only from the Guacamole container subnet (private)",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "3389",
-                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1000,
-                            "direction": "Inbound"
+                            "protocol": "Tcp", "sourcePortRange": "*", "destinationPortRange": "3389",
+                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]", "destinationAddressPrefix": "*",
+                            "access": "Allow", "priority": 1000, "direction": "Inbound"
                         }
                     },
                     {
                         "name": "allow-8888-from-container-subnet",
                         "properties": {
                             "description": "Allow port 8888 only from the container subnet",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "8888",
-                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1100,
-                            "direction": "Inbound"
+                            "protocol": "Tcp", "sourcePortRange": "*", "destinationPortRange": "8888",
+                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]", "destinationAddressPrefix": "*",
+                            "access": "Allow", "priority": 1100, "direction": "Inbound"
                         }
                     },
                     {
                         "name": "allow-8787-from-container-subnet",
                         "properties": {
                             "description": "Allow port 8787 only from the container subnet",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "8787",
-                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1200,
-                            "direction": "Inbound"
+                            "protocol": "Tcp", "sourcePortRange": "*", "destinationPortRange": "8787",
+                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]", "destinationAddressPrefix": "*",
+                            "access": "Allow", "priority": 1200, "direction": "Inbound"
                         }
                     },
                     {
                         "name": "allow-80-from-container-subnet",
                         "properties": {
                             "description": "Allow HTTP only from the container subnet",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "80",
-                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1400,
-                            "direction": "Inbound"
+                            "protocol": "Tcp", "sourcePortRange": "*", "destinationPortRange": "80",
+                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]", "destinationAddressPrefix": "*",
+                            "access": "Allow", "priority": 1400, "direction": "Inbound"
                         }
                     },
                     {
                         "name": "allow-SSH-from-container-subnet",
                         "properties": {
                             "description": "Allow SSH only from the container subnet",
-                            "protocol": "Tcp",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "22",
-                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 1500,
-                            "direction": "Inbound"
+                            "protocol": "Tcp", "sourcePortRange": "*", "destinationPortRange": "22",
+                            "sourceAddressPrefix": "[parameters('containerSubnetPrefix')]", "destinationAddressPrefix": "*",
+                            "access": "Allow", "priority": 1500, "direction": "Inbound"
                         }
                     }
                 ]
@@ -422,10 +222,7 @@
             "apiVersion": "2020-06-01",
             "name": "[variables('networkInterfaceName')]",
             "location": "[variables('region')]",
-            "dependsOn": [
-                "[variables('networkSecurityGroupName')]",
-                "[variables('newVirtualNetworkName')]"
-            ],
+            "dependsOn": [ "[variables('networkSecurityGroupName')]", "[variables('newVirtualNetworkName')]" ],
             "properties": {
                 "ipConfigurations": [
                     {
@@ -438,12 +235,8 @@
                         }
                     }
                 ],
-                "networkSecurityGroup": {
-                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('networkSecurityGroupName'))]"
-                },
-                "dnsSettings": {
-                    "internalDnsNameLabel": "[variables('internalDnsLabel')]"
-                }
+                "networkSecurityGroup": { "id": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('networkSecurityGroupName'))]" },
+                "dnsSettings": { "internalDnsNameLabel": "[variables('internalDnsLabel')]" }
             }
         },
         {
@@ -452,21 +245,11 @@
             "name": "[variables('vmName')]",
             "location": "[variables('region')]",
             "plan": "[if(equals(parameters('imagePlanRequired'), 'yes'), variables('imagePlanMap'), json('null'))]",
-            "dependsOn": [
-                "[variables('networkInterfaceName')]"
-            ],
+            "dependsOn": [ "[variables('networkInterfaceName')]" ],
             "tags": {},
             "properties": {
-                "hardwareProfile": {
-                    "vmSize": "[parameters('virtualMachineSize')]"
-                },
-                "networkProfile": {
-                    "networkInterfaces": [
-                        {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
-                        }
-                    ]
-                },
+                "hardwareProfile": { "vmSize": "[parameters('virtualMachineSize')]" },
+                "networkProfile": { "networkInterfaces": [ { "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]" } ] },
                 "securityProfile": "[if(and(equals(parameters('vmImageType'), 'custom'), not(equals(parameters('vmSecurityType'), 'GET-VM-CUSTOM-IMAGE-SECURITY-TYPE'))), if(or(equals(parameters('vmSecurityType'), 'ConfidentialVM'), equals(parameters('vmSecurityType'), 'TrustedLaunch')), json(concat('{\"uefiSettings\": {\"secureBootEnabled\": true, \"vTpmEnabled\": true}, \"securityType\": \"', parameters('vmSecurityType'), '\"}')), variables('SetVmSecurityType')), json('null'))]",
                 "storageProfile": {
                     "osDisk": {
@@ -489,21 +272,14 @@
             "apiVersion": "2015-06-15",
             "name": "[concat(variables('vmName'), '/', 'winExtension')]",
             "location": "[variables('region')]",
-            "dependsOn": [
-                "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
-            ],
+            "dependsOn": [ "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'))]" ],
             "tags": {},
             "properties": {
                 "publisher": "Microsoft.Compute",
                 "type": "CustomScriptExtension",
                 "typeHandlerVersion": "1.10",
                 "autoUpgradeMinorVersion": true,
-                "settings": {
-                    "fileUris": [
-                        "[variables('customScriptExtensionURI')]",
-                        "[variables('cloudlabsExtensionURI')]"
-                    ]
-                },
+                "settings": { "fileUris": [ "[variables('customScriptExtensionURI')]", "[variables('cloudlabsExtensionURI')]" ] },
                 "protectedSettings": {
                     "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File s/arm-templates/scripts/psscript.ps1 ', variables('Enable-CloudLabsEmbeddedShadow'), ' ', parameters('vmCustomImageOsState'), ' ', parameters('vmAdminUserName'), ' ', variables('vmPasswordAdmin'), ' ', parameters('provisionNonAdminUser'), ' ', parameters('vmNonAdminUserName'), ' ', variables('vmPasswordNonAdmin'), ' ', parameters('vmImageType'))]"
                 }
@@ -511,69 +287,25 @@
         }
     ],
     "outputs": {
-        "DNS Name": {
-            "type": "string",
-            "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))).dnsSettings.internalFqdn]"
-        },
-        "Admin Username": {
-            "type": "string",
-            "value": "[parameters('vmAdminUserName')]"
-        },
-        "Admin Password": {
-            "type": "string",
-            "value": "[variables('vmPasswordAdmin')]"
-        },
-        "Nonadmin Username": {
-            "type": "string",
-            "value": "[parameters('vmNonAdminUserName')]"
-        },
-        "NonAdmin Password": {
-            "type": "string",
-            "value": "[variables('vmPasswordNonAdmin')]"
-        },
-        "VM Username": {
-            "type": "string",
-            "value": "[variables('outputUsername')]"
-        },
-        "VM Password": {
-            "type": "string",
-            "value": "[variables('outputPassword')]"
-        },
-        "Trainer Username": {
-            "type": "string",
-            "value": "[parameters('trainerUserName')]"
-        },
-        "Trainer Password": {
-            "type": "string",
-            "value": "[parameters('trainerUserPassword')]"
-        },
-        "deploymentId": {
-            "type": "string",
-            "value": "[parameters('DeploymentID')]"
-        },
-        "LabVM Name": {
-            "type": "string",
-            "value": "[variables('vmName')]"
-        },
-        "windowsPrivateIp": {
-            "type": "string",
-            "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))).ipConfigurations[0].properties.privateIPAddress]"
-        },
-        "vnetName": {
-            "type": "string",
-            "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newVirtualNetworkName'), parameters('existingVirtualNetworkName'))]"
-        },
+        "DNS Name": { "type": "string", "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))).dnsSettings.internalFqdn]" },
+        "Admin Username": { "type": "string", "value": "[parameters('vmAdminUserName')]" },
+        "Admin Password": { "type": "string", "value": "[variables('vmPasswordAdmin')]" },
+        "Nonadmin Username": { "type": "string", "value": "[parameters('vmNonAdminUserName')]" },
+        "NonAdmin Password": { "type": "string", "value": "[variables('vmPasswordNonAdmin')]" },
+        "VM Username": { "type": "string", "value": "[variables('outputUsername')]" },
+        "VM Password": { "type": "string", "value": "[variables('outputPassword')]" },
+        "Trainer Username": { "type": "string", "value": "[parameters('trainerUserName')]" },
+        "Trainer Password": { "type": "string", "value": "[parameters('trainerUserPassword')]" },
+        "deploymentId": { "type": "string", "value": "[parameters('DeploymentID')]" },
+        "LabVM Name": { "type": "string", "value": "[variables('vmName')]" },
+        "windowsPrivateIp": { "type": "string", "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))).ipConfigurations[0].properties.privateIPAddress]" },
+        "vnetName": { "type": "string", "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newVirtualNetworkName'), parameters('existingVirtualNetworkName'))]" },
         "vnetLocation": {
             "type": "string",
-            "metadata": {
-                "description": "The ACTUAL region of the VNet being used - the new VNet's region for 'new', or the real region of the pre-existing VNet for 'existing' (read via a cross-RG reference, since it can differ from this resource group's own region). ALWAYS pass this into the Linux container VM template's 'location' parameter - a NIC must be created in the same region as the VNet/subnet it attaches to, and that region can silently differ from resourceGroup().location in the 'existing' (Advanced Networking) case."
-            },
+            "metadata": { "description": "The VNet's actual region - informational only now, since linux-container-vm.json derives this itself via reference()." },
             "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('region'), reference(resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('existingVirtualNetworkName')), '2020-06-01', 'full').location)]"
         },
-        "containerSubnetName": {
-            "type": "string",
-            "value": "[variables('containerSubnetName')]"
-        },
+        "containerSubnetName": { "type": "string", "value": "[variables('containerSubnetName')]" },
         "containerSubnetId": {
             "type": "string",
             "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), resourceId('Microsoft.Network/virtualNetworks/subnets', variables('newVirtualNetworkName'), variables('containerSubnetName')), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('existingVirtualNetworkName'), variables('containerSubnetName')))]"
@@ -582,9 +314,6 @@
             "type": "string",
             "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), resourceId('Microsoft.Network/virtualNetworks/subnets', variables('newVirtualNetworkName'), variables('newVnetSubnetName')), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('existingVirtualNetworkName'), parameters('existingVnetSubnetName')))]"
         },
-        "vnetResourceGroup": {
-            "type": "string",
-            "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), resourceGroup().name, parameters('existingVnetResourceGroupName'))]"
-        }
+        "vnetResourceGroup": { "type": "string", "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), resourceGroup().name, parameters('existingVnetResourceGroupName'))]" }
     }
 }
