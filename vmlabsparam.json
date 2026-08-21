@@ -59,29 +59,11 @@
         "existingVnetSubnetName": {
             "value": "GET-EXISTING-VNET-SUBNET"
         },
+        "existingVnetContainerSubnetName": {
+            "value": "GET-EXISTING-VNET-CONTAINER-SUBNET"
+        },
         "existingVnetResourceGroupName": {
             "value": "GET-EXISTING-VNET-RG"
-        },
-        "vnetAddressPrefix": {
-            "value": "10.0.0.0/16"
-        },
-        "vmSubnetName": {
-            "value": "vm-subnet"
-        },
-        "vmSubnetPrefix": {
-            "value": "10.0.1.0/24"
-        },
-        "containerSubnetName": {
-            "value": "container-subnet"
-        },
-        "containerSubnetPrefix": {
-            "value": "10.0.2.0/24"
-        },
-        "existingContainerSubnetName": {
-            "value": "GET-EXISTING-CONTAINER-SUBNET"
-        },
-        "restrictRdpToContainerSubnet": {
-            "value": "yes"
         },
         "vmOSDiskSizeGB": {
             "value": "GET-VM-DISK-SIZE"
