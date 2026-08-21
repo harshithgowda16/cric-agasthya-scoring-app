@@ -131,10 +131,10 @@
             }
         },
         "existingVnetResourceGroupName": {
-            "defaultValue": "[resourceGroup().name]",
+            "defaultValue": "cloudlabs-mgmt-networking",
             "type": "string",
             "metadata": {
-                "description": "Provide name of the resource group for the existing virtual network"
+                "description": "Resource group for the existing/Advanced-Networking VNet. Defaults to 'cloudlabs-mgmt-networking' since that is the shared RG most existing VNets live in - but this default only applies if the parameter is omitted entirely. If your orchestrator explicitly passes a wrong RG name, this default is never reached; resolve the correct RG (with a live existence check + fallback) in the orchestrator before calling this deployment, since ARM template expressions cannot catch a 'resource not found' and retry against a different resource group themselves."
             }
         },
         "vnetAddressPrefix": {
@@ -316,6 +316,7 @@
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2020-10-01",
             "name": "[concat('add-container-subnet-', parameters('DeploymentID'))]",
+            "location": "[variables('region')]",
             "resourceGroup": "[parameters('existingVnetResourceGroupName')]",
             "comments": "FIX: the 'existing VNet' (Advanced Networking) path previously never created a container-subnet, so the Linux container VM's NIC could never attach to it. This nested, cross-resource-group deployment adds a 'container-subnet' child resource to the existing VNet without touching any of its other subnets (Incremental mode + child resource type = additive, not a full subnets-array overwrite).",
             "properties": {
@@ -561,6 +562,13 @@
         "vnetName": {
             "type": "string",
             "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newVirtualNetworkName'), parameters('existingVirtualNetworkName'))]"
+        },
+        "vnetLocation": {
+            "type": "string",
+            "metadata": {
+                "description": "The ACTUAL region of the VNet being used - the new VNet's region for 'new', or the real region of the pre-existing VNet for 'existing' (read via a cross-RG reference, since it can differ from this resource group's own region). ALWAYS pass this into the Linux container VM template's 'location' parameter - a NIC must be created in the same region as the VNet/subnet it attaches to, and that region can silently differ from resourceGroup().location in the 'existing' (Advanced Networking) case."
+            },
+            "value": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('region'), reference(resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('existingVirtualNetworkName')), '2020-06-01', 'full').location)]"
         },
         "containerSubnetName": {
             "type": "string",
