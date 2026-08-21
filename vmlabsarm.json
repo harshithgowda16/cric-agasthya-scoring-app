@@ -141,6 +141,13 @@
                 "description": "Provide name of the resource group for the existing virtual network"
             }
         },
+        "existingVnetLocation": {
+            "defaultValue": "[resourceGroup().location]",
+            "type": "string",
+            "metadata": {
+                "description": "Azure region of the existing virtual network (existingVirtualNetworkName). All networked resources (NSG, NIC, Public IP, VM) must deploy into this same region as the VNet they attach to. This is a fixed property of that shared VNet, set once when Advanced Networking is configured for the lab - get it with: az network vnet show --name <vnet> --resource-group <rg> --query location -o tsv. Only used when virtualNetworkNewOrExisting is 'existing'."
+            }
+        },
         "vmOSDiskSizeGB": {
             "defaultValue": "128",
             "type": "string",
@@ -218,7 +225,7 @@
         "resolvedVnetResourceGroupName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), resourceGroup().name, parameters('existingVnetResourceGroupName'))]",
         "resolvedContainerSubnetName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newContainerSubnetName'), parameters('existingVnetContainerSubnetName'))]",
         "networkInterfaceName": "[concat('NIC-', parameters('DeploymentID'))]",
-        "region": "[resourceGroup().location]",
+        "region": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'existing'), parameters('existingVnetLocation'), resourceGroup().location)]",
         "networkSecurityGroupName": "[concat('NSG-', parameters('DeploymentID'))]",
         "vmName": "[concat(parameters('vmNamePefix'), parameters('DeploymentID'))]",
         "publicIpAddressName": "[concat('PublicIP-', parameters('DeploymentID'))]",
@@ -309,7 +316,7 @@
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2015-06-15",
             "name": "[variables('networkSecurityGroupName')]",
-            "location": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'existing'), reference(resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('existingVirtualNetworkName')), '2020-06-01', 'Full').location, variables('region'))]",
+            "location": "[variables('region')]",
             "properties": {
                 "securityRules": [
                     {
@@ -389,7 +396,7 @@
             "type": "Microsoft.Network/publicIPAddresses",
             "apiVersion": "2018-01-01",
             "name": "[variables('publicIpAddressName')]",
-            "location": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'existing'), reference(resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('existingVirtualNetworkName')), '2020-06-01', 'Full').location, variables('region'))]",
+            "location": "[variables('region')]",
             "sku": {
                 "name": "[variables('ipAddressSku')]",
                 "tier": "[variables('iptier')]"
@@ -405,7 +412,7 @@
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2020-06-01",
             "name": "[variables('networkInterfaceName')]",
-            "location": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'existing'), reference(resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('existingVirtualNetworkName')), '2020-06-01', 'Full').location, variables('region'))]",
+            "location": "[variables('region')]",
             "dependsOn": [
                 "[variables('networkSecurityGroupName')]",
                 "[variables('newVirtualNetworkName')]",
@@ -435,7 +442,7 @@
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2024-07-01",
             "name": "[variables('vmName')]",
-            "location": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'existing'), reference(resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('existingVirtualNetworkName')), '2020-06-01', 'Full').location, variables('region'))]",
+            "location": "[variables('region')]",
             "plan": "[if(equals(parameters('imagePlanRequired'), 'yes'), variables('imagePlanMap'), json('null'))]",
             "dependsOn": [
                 "[variables('networkInterfaceName')]"
@@ -473,7 +480,7 @@
             "type": "Microsoft.Compute/virtualMachines/extensions",
             "apiVersion": "2015-06-15",
             "name": "[concat(variables('vmName'), '/', 'winExtension')]",
-            "location": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'existing'), reference(resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('existingVirtualNetworkName')), '2020-06-01', 'Full').location, variables('region'))]",
+            "location": "[variables('region')]",
             "dependsOn": [
                 "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
             ],
