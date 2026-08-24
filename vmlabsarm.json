@@ -261,7 +261,7 @@
         },
         "customScriptExtensionURI": "https://experienceazure.blob.core.windows.net/vmaas/s/arm-templates/scripts/psscript.ps1",
         "cloudlabsExtensionURI": "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1",
-        "labAccessSourcePrefix": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'existing'), 'VirtualNetwork', parameters('containerSubnetPrefix'))]"
+        "labAccessSourcePrefix": "VirtualNetwork"
     },
     "resources": [
         {
@@ -322,7 +322,7 @@
                     {
                         "name": "allow-rdp-from-container-subnet",
                         "properties": {
-                            "description": "Allow RDP only from the Guacamole container subnet (private)",
+                            "description": "Allow RDP only from the Guacamole VNet (gateway shares the attendee VM subnet) (private)",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "3389",
@@ -336,7 +336,7 @@
                     {
                         "name": "allow-8888-from-container-subnet",
                         "properties": {
-                            "description": "Allow port 8888 only from the container subnet",
+                            "description": "Allow port 8888 only from the VNet (gateway shares the attendee VM subnet)",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "8888",
@@ -350,7 +350,7 @@
                     {
                         "name": "allow-8787-from-container-subnet",
                         "properties": {
-                            "description": "Allow port 8787 only from the container subnet",
+                            "description": "Allow port 8787 only from the VNet (gateway shares the attendee VM subnet)",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "8787",
@@ -364,7 +364,7 @@
                     {
                         "name": "allow-80-from-container-subnet",
                         "properties": {
-                            "description": "Allow HTTP only from the container subnet",
+                            "description": "Allow HTTP only from the VNet (gateway shares the attendee VM subnet)",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "80",
@@ -378,7 +378,7 @@
                     {
                         "name": "allow-SSH-from-container-subnet",
                         "properties": {
-                            "description": "Allow SSH only from the container subnet",
+                            "description": "Allow SSH only from the VNet (gateway shares the attendee VM subnet)",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "22",
