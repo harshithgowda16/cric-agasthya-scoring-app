@@ -2,7 +2,7 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "metadata": {
-        "description": "CloudLabs - Attendee Windows VM. For virtualNetworkNewOrExisting='new' creates cloudlabs-vnet-<DeploymentID> with vm-subnet + container-subnet. For 'existing' (Advanced Networking) it attaches to the supplied existing subnet and creates NO new subnet - customer VNets are routinely provisioned with one subnet spanning the whole address space, so adding one is impossible; the Guacamole gateway joins that same existing subnet instead. NSG lab/RDP rules therefore source from the VirtualNetwork service tag in the existing case, and from containerSubnetPrefix in the new case."
+        "description": "CloudLabs - Attendee Windows VM. New-VNet path: creates cloudlabs-vnet-<DeploymentID> with vm-subnet + container-subnet. Existing-VNet (Advanced Networking) path: attaches the Windows VM to the supplied existing subnet and creates NO container subnet - CloudLabs VNets carry one subnet spanning the entire address space, so there is no room for another and the Guacamole gateway shares this subnet instead. NSG source is therefore the VirtualNetwork service tag on the existing path, and containerSubnetPrefix on the new path."
     },
     "parameters": {
         "vmNamePefix": {
@@ -261,7 +261,7 @@
         },
         "customScriptExtensionURI": "https://experienceazure.blob.core.windows.net/vmaas/s/arm-templates/scripts/psscript.ps1",
         "cloudlabsExtensionURI": "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1",
-        "labAccessSourcePrefix": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'existing'), 'VirtualNetwork', parameters('containerSubnetPrefix'))]"
+        "labAccessSourcePrefix": "VirtualNetwork"
     },
     "resources": [
         {
@@ -314,7 +314,7 @@
         },
         {
             "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "2020-06-01",
+            "apiVersion": "2023-09-01",
             "name": "[variables('networkSecurityGroupName')]",
             "location": "[variables('region')]",
             "properties": {
