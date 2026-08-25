@@ -344,7 +344,7 @@
                             "apiVersion": "2023-09-01",
                             "name": "[concat(parameters('existingVirtualNetworkName'), '/', variables('containerSubnetName'))]",
                             "properties": {
-                                "addressPrefix": "[cidrSubnet(reference(resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('existingVirtualNetworkName')), '2023-09-01').addressSpace.addressPrefixes[0], parameters('existingContainerSubnetMask'), parameters('existingContainerSubnetIndex'))]"
+                                "addressPrefix": "[cidrSubnet(reference(resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('existingVirtualNetworkName')), '2023-09-01').addressSpace.addressPrefixes[sub(length(reference(resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('existingVirtualNetworkName')), '2023-09-01').addressSpace.addressPrefixes), 1)], parameters('existingContainerSubnetMask'), parameters('existingContainerSubnetIndex'))]"
                             }
                         }
                     ]
