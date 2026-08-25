@@ -430,7 +430,11 @@
             "dependsOn": [
                 "[variables('networkInterfaceName')]"
             ],
-            "tags": {},
+            "tags": {
+                "cloudlabsVnetName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newVirtualNetworkName'), parameters('existingVirtualNetworkName'))]",
+                "cloudlabsVnetResourceGroup": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), resourceGroup().name, parameters('existingVnetResourceGroupName'))]",
+                "cloudlabsSubnetName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('containerSubnetName'), parameters('existingVnetSubnetName'))]"
+            },
             "properties": {
                 "hardwareProfile": {
                     "vmSize": "[parameters('virtualMachineSize')]"
