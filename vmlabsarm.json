@@ -220,6 +220,20 @@
             "metadata": {
                 "description": "This parameter is required for security type"
             }
+        },
+        "existingContainerSubnetMask": {
+            "type": "int",
+            "defaultValue": 24,
+            "metadata": {
+                "description": "Prefix length for the auto-derived container-subnet when attaching to an EXISTING VNet. Only used on the existing-VNet path; the new-VNet path keeps using containerSubnetPrefix as a fixed value. 24 gives 251 usable IPs. Lower the index or raise this (e.g. 28) if the VNet's address space is small."
+            }
+        },
+        "existingContainerSubnetIndex": {
+            "type": "int",
+            "defaultValue": 200,
+            "metadata": {
+                "description": "Which /mask block to carve out of the existing VNet's own address space (first prefix only) via cidrSubnet(). 200 is deliberately high since customer subnets are almost always allocated from the bottom of the range, minimising collision odds. This makes subnet creation idempotent: re-running this deployment against the same VNet always computes the SAME prefix, so re-declaring it under Incremental mode is a no-op if it already exists."
+            }
         }
     },
     "variables": {
@@ -310,6 +324,31 @@
                         }
                     }
                 ]
+            }
+        },
+        {
+            "condition": "[equals(parameters('virtualNetworkNewOrExisting'), 'existing')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2020-10-01",
+            "name": "[concat('ensure-container-subnet-', parameters('DeploymentID'))]",
+            "resourceGroup": "[parameters('existingVnetResourceGroupName')]",
+            "comments": "Ensure-creates container-subnet inside the existing VNet, auto-sized from that VNet's own address space via cidrSubnet() rather than a fixed prefix - works regardless of how the customer VNet is addressed. Idempotent: same VNet space + same mask/index always compute the same prefix, so re-declaring it is a no-op if already present (Incremental mode). No 'location' property - illegal for RG-scope nested deployments.",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [
+                        {
+                            "type": "Microsoft.Network/virtualNetworks/subnets",
+                            "apiVersion": "2023-09-01",
+                            "name": "[concat(parameters('existingVirtualNetworkName'), '/', variables('containerSubnetName'))]",
+                            "properties": {
+                                "addressPrefix": "[cidrSubnet(reference(resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('existingVirtualNetworkName')), '2023-09-01').addressSpace.addressPrefixes[0], parameters('existingContainerSubnetMask'), parameters('existingContainerSubnetIndex'))]"
+                            }
+                        }
+                    ]
+                }
             }
         },
         {
@@ -433,7 +472,7 @@
             "tags": {
                 "cloudlabsVnetName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('newVirtualNetworkName'), parameters('existingVirtualNetworkName'))]",
                 "cloudlabsVnetResourceGroup": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), resourceGroup().name, parameters('existingVnetResourceGroupName'))]",
-                "cloudlabsSubnetName": "[if(equals(parameters('virtualNetworkNewOrExisting'), 'new'), variables('containerSubnetName'), parameters('existingVnetSubnetName'))]"
+                "cloudlabsSubnetName": "[variables('containerSubnetName')]"
             },
             "properties": {
                 "hardwareProfile": {
