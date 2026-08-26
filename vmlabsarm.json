@@ -425,7 +425,7 @@
                     {
                         "name": "allow-rdp-from-container-subnet",
                         "properties": {
-                            "description": "Allow RDP from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
+                            "description": "Allow RDP from inside this VNet only. The Guacamole gateway sits in container-subnet here. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "3389",
@@ -439,7 +439,7 @@
                     {
                         "name": "allow-8888-from-container-subnet",
                         "properties": {
-                            "description": "Allow port 8888 from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
+                            "description": "Allow port 8888 from inside this VNet only. Gateway sits in container-subnet here. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "8888",
@@ -453,7 +453,7 @@
                     {
                         "name": "allow-8787-from-container-subnet",
                         "properties": {
-                            "description": "Allow port 8787 from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
+                            "description": "Allow port 8787 from inside this VNet only. Gateway sits in container-subnet here. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "8787",
@@ -467,7 +467,7 @@
                     {
                         "name": "allow-80-from-container-subnet",
                         "properties": {
-                            "description": "Allow HTTP from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
+                            "description": "Allow HTTP from inside this VNet only. Gateway sits in container-subnet here. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "80",
@@ -481,7 +481,7 @@
                     {
                         "name": "allow-SSH-from-container-subnet",
                         "properties": {
-                            "description": "Allow SSH from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
+                            "description": "Allow SSH from inside this VNet only. Gateway sits in container-subnet here. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "22",
