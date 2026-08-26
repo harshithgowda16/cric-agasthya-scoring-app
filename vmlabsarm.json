@@ -2,7 +2,7 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "metadata": {
-        "description": "CloudLabs - Attendee Windows VM. New-VNet path: creates cloudlabs-vnet-<DeploymentID> with vm-subnet + container-subnet. Existing-VNet (Advanced Networking) path: attaches the Windows VM to the supplied existing subnet and creates NO container subnet - CloudLabs VNets carry one subnet spanning the entire address space, so there is no room for another and the Guacamole gateway shares this subnet instead. NSG source is therefore the VirtualNetwork service tag on the existing path, and containerSubnetPrefix on the new path."
+        "description": "CloudLabs - Attendee Windows VM. Deployed FIRST; the Guacamole gateway (linuxvm) is deployed afterwards and always lands in a subnet named container-subnet. New-VNet path: creates cloudlabs-vnet-<DeploymentID> in this resource group with vm-subnet (Windows VM) and container-subnet (gateway), so the gateway's subnet is ready before it deploys. Existing-VNet (Advanced Networking) path: attaches the Windows VM to the supplied existing subnet and does NOT touch the customer VNet's subnets - the gateway template owns the check-or-create of container-subnet there, so exactly one template is responsible for it. The gateway identifies the VNet from the same GET-VNET-CONFIG / GET-EXISTING-VNET-NAME / GET-EXISTING-VNET-RG values passed here. NSG lab rules source from the VirtualNetwork service tag, which covers the gateway on both paths since it always shares this VNet."
     },
     "parameters": {
         "vmNamePefix": {
@@ -155,7 +155,7 @@
             "defaultValue": "10.0.2.0/24",
             "type": "string",
             "metadata": {
-                "description": "CIDR for the container subnet (container-subnet). Also used when adding the container subnet to an EXISTING VNet - must fall within that VNet's address space and not overlap any subnet already present in it."
+                "description": "CIDR for container-subnet, the subnet the Guacamole gateway joins. Used on the NEW-VNet path only; on the existing-VNet path the gateway template derives the prefix from the customer VNet's own address space."
             }
         },
         "vmOSDiskSizeGB": {
@@ -219,20 +219,6 @@
             "type": "string",
             "metadata": {
                 "description": "This parameter is required for security type"
-            }
-        },
-        "existingContainerSubnetMask": {
-            "type": "int",
-            "defaultValue": 24,
-            "metadata": {
-                "description": "Prefix length for the auto-derived container-subnet when attaching to an EXISTING VNet. Only used on the existing-VNet path; the new-VNet path keeps using containerSubnetPrefix as a fixed value. 24 gives 251 usable IPs. Lower the index or raise this (e.g. 28) if the VNet's address space is small."
-            }
-        },
-        "existingContainerSubnetIndex": {
-            "type": "int",
-            "defaultValue": 200,
-            "metadata": {
-                "description": "Which /mask block to carve out of the existing VNet's own address space (first prefix only) via cidrSubnet(). 200 is deliberately high since customer subnets are almost always allocated from the bottom of the range, minimising collision odds. This makes subnet creation idempotent: re-running this deployment against the same VNet always computes the SAME prefix, so re-declaring it under Incremental mode is a no-op if it already exists."
             }
         }
     },
@@ -327,31 +313,6 @@
             }
         },
         {
-            "condition": "[equals(parameters('virtualNetworkNewOrExisting'), 'existing')]",
-            "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2020-10-01",
-            "name": "[concat('ensure-container-subnet-', parameters('DeploymentID'))]",
-            "resourceGroup": "[parameters('existingVnetResourceGroupName')]",
-            "comments": "Ensure-creates container-subnet inside the existing VNet, auto-sized from that VNet's own address space via cidrSubnet() rather than a fixed prefix - works regardless of how the customer VNet is addressed. Idempotent: same VNet space + same mask/index always compute the same prefix, so re-declaring it is a no-op if already present (Incremental mode). No 'location' property - illegal for RG-scope nested deployments.",
-            "properties": {
-                "mode": "Incremental",
-                "template": {
-                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-                    "contentVersion": "1.0.0.0",
-                    "resources": [
-                        {
-                            "type": "Microsoft.Network/virtualNetworks/subnets",
-                            "apiVersion": "2023-09-01",
-                            "name": "[concat(parameters('existingVirtualNetworkName'), '/', variables('containerSubnetName'))]",
-                            "properties": {
-                                "addressPrefix": "[cidrSubnet(reference(resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('existingVirtualNetworkName')), '2023-09-01').addressSpace.addressPrefixes[sub(length(reference(resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('existingVirtualNetworkName')), '2023-09-01').addressSpace.addressPrefixes), 1)], parameters('existingContainerSubnetMask'), parameters('existingContainerSubnetIndex'))]"
-                            }
-                        }
-                    ]
-                }
-            }
-        },
-        {
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2023-09-01",
             "name": "[variables('networkSecurityGroupName')]",
@@ -361,7 +322,7 @@
                     {
                         "name": "allow-rdp-from-container-subnet",
                         "properties": {
-                            "description": "Allow RDP only from the Guacamole VNet (gateway shares the attendee VM subnet) (private)",
+                            "description": "Allow RDP from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "3389",
@@ -375,7 +336,7 @@
                     {
                         "name": "allow-8888-from-container-subnet",
                         "properties": {
-                            "description": "Allow port 8888 only from the VNet (gateway shares the attendee VM subnet)",
+                            "description": "Allow port 8888 from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "8888",
@@ -389,7 +350,7 @@
                     {
                         "name": "allow-8787-from-container-subnet",
                         "properties": {
-                            "description": "Allow port 8787 only from the VNet (gateway shares the attendee VM subnet)",
+                            "description": "Allow port 8787 from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "8787",
@@ -403,7 +364,7 @@
                     {
                         "name": "allow-80-from-container-subnet",
                         "properties": {
-                            "description": "Allow HTTP only from the VNet (gateway shares the attendee VM subnet)",
+                            "description": "Allow HTTP from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "80",
@@ -417,7 +378,7 @@
                     {
                         "name": "allow-SSH-from-container-subnet",
                         "properties": {
-                            "description": "Allow SSH only from the VNet (gateway shares the attendee VM subnet)",
+                            "description": "Allow SSH from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "22",
@@ -446,7 +407,7 @@
                         "name": "ipconfig1",
                         "properties": {
                             "subnet": {
-                                "id": "[if(equals(parameters('virtualNetworkNewOrExisting'),'new'), resourceId('Microsoft.Network/virtualNetworks/subnets', variables('newVirtualNetworkName'), variables('newVnetSubnetName')), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets/', parameters('existingVirtualNetworkName'), parameters('existingVnetSubnetName')))]"
+                                "id": "[if(equals(parameters('virtualNetworkNewOrExisting'),'new'), resourceId('Microsoft.Network/virtualNetworks/subnets', variables('newVirtualNetworkName'), variables('newVnetSubnetName')), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('existingVirtualNetworkName'), parameters('existingVnetSubnetName')))]"
                             },
                             "privateIPAllocationMethod": "Dynamic"
                         }
