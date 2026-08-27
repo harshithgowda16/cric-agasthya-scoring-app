@@ -2,7 +2,7 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "metadata": {
-        "description": "CloudLabs - Attendee Windows VM. Deployed FIRST. This template is the SOLE OWNER of container-subnet on BOTH paths, because it is the only one of the two that knows the VNet's resource group statically (from its own parameters), which ARM requires for a cross-resource-group nested deployment scope. New-VNet path: creates cloudlabs-vnet-<DeploymentID> in this resource group with vm-subnet and container-subnet inline. Existing-VNet (Advanced Networking) path: attaches the Windows VM to the supplied existing subnet, then check-or-creates container-subnet inside that customer VNet, auto-sized from the VNet's own LAST address prefix via cidrSubnet(). The gateway template then simply follows this VM's NIC to whichever VNet it actually landed in, so the two always agree regardless of which resource group the VNet lives in."
+        "description": "CloudLabs - Attendee Windows VM. Deployed FIRST; the Guacamole gateway (linuxvm) is deployed afterwards and always lands in a subnet named container-subnet. New-VNet path: creates cloudlabs-vnet-<DeploymentID> in this resource group with vm-subnet (Windows VM) and container-subnet (gateway), so the gateway's subnet is ready before it deploys. Existing-VNet (Advanced Networking) path: attaches the Windows VM to the supplied existing subnet and does NOT touch the customer VNet's subnets - the gateway template owns the check-or-create of container-subnet there, so exactly one template is responsible for it. The gateway identifies the VNet from the same GET-VNET-CONFIG / GET-EXISTING-VNET-NAME / GET-EXISTING-VNET-RG values passed here. NSG lab rules source from the VirtualNetwork service tag, which covers the gateway on both paths since it always shares this VNet."
     },
     "parameters": {
         "vmNamePefix": {
@@ -220,20 +220,6 @@
             "metadata": {
                 "description": "This parameter is required for security type"
             }
-        },
-        "existingContainerSubnetMask": {
-            "type": "int",
-            "defaultValue": 24,
-            "metadata": {
-                "description": "Prefix length used only when container-subnet must be CREATED inside an existing customer VNet. 24 gives 251 usable IPs; raise (e.g. 28) if the VNet's address space is tight."
-            }
-        },
-        "existingContainerSubnetIndex": {
-            "type": "int",
-            "defaultValue": 200,
-            "metadata": {
-                "description": "Which /mask block to carve out of the existing VNet's LAST address prefix via cidrSubnet(). 200 is deliberately high because customer subnets are almost always allocated from the bottom of the range, minimising collision odds."
-            }
         }
     },
     "variables": {
@@ -275,8 +261,7 @@
         },
         "customScriptExtensionURI": "https://experienceazure.blob.core.windows.net/vmaas/s/arm-templates/scripts/psscript.ps1",
         "cloudlabsExtensionURI": "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1",
-        "labAccessSourcePrefix": "VirtualNetwork",
-        "existingVnetId": "[resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('existingVirtualNetworkName'))]"
+        "labAccessSourcePrefix": "VirtualNetwork"
     },
     "resources": [
         {
@@ -328,108 +313,6 @@
             }
         },
         {
-            "condition": "[equals(parameters('virtualNetworkNewOrExisting'), 'existing')]",
-            "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2020-10-01",
-            "name": "[concat('inspect-existing-vnet-', parameters('DeploymentID'))]",
-            "comments": "Reads the customer VNet and reports whether container-subnet already exists plus the prefix to use if it must be created. Exists because a resource 'condition' cannot depend on runtime state, so the existence answer is turned into an ordinary parameter for the next stage. Creates nothing. No 'location' property: illegal on RG-scope nested deployments.",
-            "properties": {
-                "mode": "Incremental",
-                "template": {
-                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-                    "contentVersion": "1.0.0.0",
-                    "resources": [],
-                    "outputs": {
-                        "containerSubnetExists": {
-                            "type": "bool",
-                            "value": "[contains(map(reference(variables('existingVnetId'), '2023-09-01').subnets, lambda('s', lambdaVariables('s').name)), variables('containerSubnetName'))]"
-                        },
-                        "containerSubnetPrefix": {
-                            "type": "string",
-                            "value": "[cidrSubnet(last(reference(variables('existingVnetId'), '2023-09-01').addressSpace.addressPrefixes), parameters('existingContainerSubnetMask'), parameters('existingContainerSubnetIndex'))]",
-                            "metadata": {
-                                "description": "Derived from the LAST listed address prefix, not the first: when a VNet runs out of room new ranges get appended, so the newest range is the one most likely to still have space."
-                            }
-                        },
-                        "hasRoom": {
-                            "type": "bool",
-                            "value": "[not(contains(map(reference(variables('existingVnetId'), '2023-09-01').subnets, lambda('s', lambdaVariables('s').properties.addressPrefix)), last(reference(variables('existingVnetId'), '2023-09-01').addressSpace.addressPrefixes)))]",
-                            "metadata": {
-                                "description": "False when an existing subnet already covers the entire target address range, which is how CloudLabs-created VNets are usually laid out (a single 'default' subnet spanning the whole space). In that case no subnet can be added and creation must be skipped rather than failing the whole attendee deployment - the gateway template then shares the attendee's subnet instead."
-                            }
-                        },
-                        "shouldCreate": {
-                            "type": "bool",
-                            "value": "[and(not(contains(map(reference(variables('existingVnetId'), '2023-09-01').subnets, lambda('s', lambdaVariables('s').name)), variables('containerSubnetName'))), not(contains(map(reference(variables('existingVnetId'), '2023-09-01').subnets, lambda('s', lambdaVariables('s').properties.addressPrefix)), last(reference(variables('existingVnetId'), '2023-09-01').addressSpace.addressPrefixes))))]",
-                            "metadata": {
-                                "description": "Create container-subnet only when it does not already exist AND the VNet actually has room."
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        {
-            "condition": "[equals(parameters('virtualNetworkNewOrExisting'), 'existing')]",
-            "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2020-10-01",
-            "name": "[concat('ensure-container-subnet-', parameters('DeploymentID'))]",
-            "resourceGroup": "[parameters('existingVnetResourceGroupName')]",
-            "dependsOn": [
-                "[concat('inspect-existing-vnet-', parameters('DeploymentID'))]"
-            ],
-            "comments": "Check-or-create for container-subnet in the customer VNet. Creation is SKIPPED when the subnet already exists or when the VNet has no free address space, so a full VNet no longer fails the whole attendee deployment - the gateway template detects the missing subnet and shares the attendee's subnet instead. 'resourceGroup' is a plain parameter so the scope is known at preflight; a reference() would be illegal there. Scope MUST be inner.",
-            "properties": {
-                "mode": "Incremental",
-                "expressionEvaluationOptions": {
-                    "scope": "inner"
-                },
-                "parameters": {
-                    "vnetName": {
-                        "value": "[parameters('existingVirtualNetworkName')]"
-                    },
-                    "subnetName": {
-                        "value": "[variables('containerSubnetName')]"
-                    },
-                    "addressPrefix": {
-                        "value": "[reference(concat('inspect-existing-vnet-', parameters('DeploymentID'))).outputs.containerSubnetPrefix.value]"
-                    },
-                    "subnetExists": {
-                        "value": "[not(reference(concat('inspect-existing-vnet-', parameters('DeploymentID'))).outputs.shouldCreate.value)]"
-                    }
-                },
-                "template": {
-                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-                    "contentVersion": "1.0.0.0",
-                    "parameters": {
-                        "vnetName": {
-                            "type": "string"
-                        },
-                        "subnetName": {
-                            "type": "string"
-                        },
-                        "addressPrefix": {
-                            "type": "string"
-                        },
-                        "subnetExists": {
-                            "type": "bool"
-                        }
-                    },
-                    "resources": [
-                        {
-                            "condition": "[not(parameters('subnetExists'))]",
-                            "type": "Microsoft.Network/virtualNetworks/subnets",
-                            "apiVersion": "2023-09-01",
-                            "name": "[concat(parameters('vnetName'), '/', parameters('subnetName'))]",
-                            "properties": {
-                                "addressPrefix": "[parameters('addressPrefix')]"
-                            }
-                        }
-                    ]
-                }
-            }
-        },
-        {
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2023-09-01",
             "name": "[variables('networkSecurityGroupName')]",
@@ -439,7 +322,7 @@
                     {
                         "name": "allow-rdp-from-container-subnet",
                         "properties": {
-                            "description": "Allow RDP from inside this VNet only. The Guacamole gateway sits in container-subnet here. Not reachable from the internet.",
+                            "description": "Allow RDP from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "3389",
@@ -453,7 +336,7 @@
                     {
                         "name": "allow-8888-from-container-subnet",
                         "properties": {
-                            "description": "Allow port 8888 from inside this VNet only. Gateway sits in container-subnet here. Not reachable from the internet.",
+                            "description": "Allow port 8888 from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "8888",
@@ -467,7 +350,7 @@
                     {
                         "name": "allow-8787-from-container-subnet",
                         "properties": {
-                            "description": "Allow port 8787 from inside this VNet only. Gateway sits in container-subnet here. Not reachable from the internet.",
+                            "description": "Allow port 8787 from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "8787",
@@ -481,7 +364,7 @@
                     {
                         "name": "allow-80-from-container-subnet",
                         "properties": {
-                            "description": "Allow HTTP from inside this VNet only. Gateway sits in container-subnet here. Not reachable from the internet.",
+                            "description": "Allow HTTP from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "80",
@@ -495,7 +378,7 @@
                     {
                         "name": "allow-SSH-from-container-subnet",
                         "properties": {
-                            "description": "Allow SSH from inside this VNet only. Gateway sits in container-subnet here. Not reachable from the internet.",
+                            "description": "Allow SSH from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "22",
