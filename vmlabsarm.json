@@ -350,6 +350,20 @@
                             "metadata": {
                                 "description": "Derived from the LAST listed address prefix, not the first: when a VNet runs out of room new ranges get appended, so the newest range is the one most likely to still have space."
                             }
+                        },
+                        "hasRoom": {
+                            "type": "bool",
+                            "value": "[not(contains(map(reference(variables('existingVnetId'), '2023-09-01').subnets, lambda('s', lambdaVariables('s').properties.addressPrefix)), last(reference(variables('existingVnetId'), '2023-09-01').addressSpace.addressPrefixes)))]",
+                            "metadata": {
+                                "description": "False when an existing subnet already covers the entire target address range, which is how CloudLabs-created VNets are usually laid out (a single 'default' subnet spanning the whole space). In that case no subnet can be added and creation must be skipped rather than failing the whole attendee deployment - the gateway template then shares the attendee's subnet instead."
+                            }
+                        },
+                        "shouldCreate": {
+                            "type": "bool",
+                            "value": "[and(not(contains(map(reference(variables('existingVnetId'), '2023-09-01').subnets, lambda('s', lambdaVariables('s').name)), variables('containerSubnetName'))), not(contains(map(reference(variables('existingVnetId'), '2023-09-01').subnets, lambda('s', lambdaVariables('s').properties.addressPrefix)), last(reference(variables('existingVnetId'), '2023-09-01').addressSpace.addressPrefixes))))]",
+                            "metadata": {
+                                "description": "Create container-subnet only when it does not already exist AND the VNet actually has room."
+                            }
                         }
                     }
                 }
@@ -364,7 +378,7 @@
             "dependsOn": [
                 "[concat('inspect-existing-vnet-', parameters('DeploymentID'))]"
             ],
-            "comments": "Check-or-create for container-subnet inside the customer VNet. 'resourceGroup' is a plain parameter, so the target scope is known at preflight - a reference() would not be legal here. The inner subnet's condition is driven by the subnetExists parameter, so an already-present container-subnet is left completely untouched, prefix included. Scope MUST be inner.",
+            "comments": "Check-or-create for container-subnet in the customer VNet. Creation is SKIPPED when the subnet already exists or when the VNet has no free address space, so a full VNet no longer fails the whole attendee deployment - the gateway template detects the missing subnet and shares the attendee's subnet instead. 'resourceGroup' is a plain parameter so the scope is known at preflight; a reference() would be illegal there. Scope MUST be inner.",
             "properties": {
                 "mode": "Incremental",
                 "expressionEvaluationOptions": {
@@ -381,7 +395,7 @@
                         "value": "[reference(concat('inspect-existing-vnet-', parameters('DeploymentID'))).outputs.containerSubnetPrefix.value]"
                     },
                     "subnetExists": {
-                        "value": "[reference(concat('inspect-existing-vnet-', parameters('DeploymentID'))).outputs.containerSubnetExists.value]"
+                        "value": "[not(reference(concat('inspect-existing-vnet-', parameters('DeploymentID'))).outputs.shouldCreate.value)]"
                     }
                 },
                 "template": {
