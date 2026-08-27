@@ -25,6 +25,8 @@
         "vnetAddressPrefix": { "value": "10.0.0.0/16" },
         "vmSubnetPrefix": { "value": "10.0.1.0/24" },
         "containerSubnetPrefix": { "value": "10.0.2.0/24" },
+        "existingContainerSubnetMask": { "value": 24 },
+        "existingContainerSubnetIndex": { "value": 200 },
         "vmOSDiskSizeGB": { "value": "GET-VM-DISK-SIZE" },
         "vmOsDiskType": { "value": "GET-VM-DISK-TYPE" },
         "provisionNonAdminUser": { "value": "ENABLE-NONADMIN-VM-ACCOUNT" },
