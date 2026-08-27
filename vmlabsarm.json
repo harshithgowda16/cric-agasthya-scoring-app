@@ -158,6 +158,20 @@
                 "description": "CIDR for container-subnet, the subnet the Guacamole gateway joins. Used on the NEW-VNet path only; on the existing-VNet path the gateway template derives the prefix from the customer VNet's own address space."
             }
         },
+        "existingContainerSubnetMask": {
+            "defaultValue": 24,
+            "type": "int",
+            "metadata": {
+                "description": "Prefix length for container-subnet when it has to be carved out of an existing customer VNet. Declared here for portal parameter-set parity only - this template does not create container-subnet. It is consumed by the gateway (linuxvm) template's ensure-container-subnet stage, which computes the CIDR via cidrSubnet(). Creating the subnet here as well would race that deployment."
+            }
+        },
+        "existingContainerSubnetIndex": {
+            "defaultValue": 200,
+            "type": "int",
+            "metadata": {
+                "description": "Index of the /existingContainerSubnetMask block to carve out of the existing VNet's address space. Declared here for portal parameter-set parity only - consumed by the gateway (linuxvm) template. 200 is deliberately high because customer subnets are almost always allocated from the bottom of the range."
+            }
+        },
         "vmOSDiskSizeGB": {
             "defaultValue": "128",
             "type": "string",
@@ -336,7 +350,7 @@
                     {
                         "name": "allow-8888-from-container-subnet",
                         "properties": {
-                            "description": "Allow port 8888 from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
+                            "description": "Allow port 8888 from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not internet reachable.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "8888",
@@ -350,7 +364,7 @@
                     {
                         "name": "allow-8787-from-container-subnet",
                         "properties": {
-                            "description": "Allow port 8787 from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not reachable from the internet.",
+                            "description": "Allow port 8787 from inside this VNet only - the Guacamole gateway sits in container-subnet in this same VNet. Not internet reachable.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "destinationPortRange": "8787",
