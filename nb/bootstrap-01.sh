@@ -38,10 +38,19 @@ systemctl enable redis-server >>"$LOG" 2>&1
 systemctl restart redis-server >>"$LOG" 2>&1
 
 log "--- step 2: python redis client ---"
-pip3 install --break-system-packages redis >>"$LOG" 2>&1
+# --break-system-packages only exists on newer pip (PEP 668 / Ubuntu 23.04+).
+# This package's own deploy-01.json provisions Ubuntu 22.04 (jammy), whose
+# pip3 does not recognize that flag at all and exits with a usage error
+# instead of installing anything if passed -- so try it first, and if pip
+# itself doesn't understand the flag, fall back to a plain install.
+if ! pip3 install --break-system-packages redis >>"$LOG" 2>&1; then
+  log "pip3 install --break-system-packages failed (older pip / no PEP 668 support?) -- retrying without the flag"
+  pip3 install redis >>"$LOG" 2>&1
+fi
+python3 -c "import redis" >>"$LOG" 2>&1 || log "WARNING: python redis client still not importable after both install attempts -- see pip output above"
 
 log "--- step 3: lay down StarterCode under $BASE ---"
-mkdir -p "$BASE"/{mqsim,kafkasim,elksim/indices,python}
+mkdir -p "$BASE"/{mqsim,kafkasim,elksim/indices,python,reference}
 mkdir -p /var/log/nedbank-msg
 
 log "writing /opt/nedbank-msg/mqsim/mqsim.py"
@@ -583,6 +592,388 @@ if __name__ == "__main__":
     main()
 MSGCTL_PY
 chmod 755 /opt/nedbank-msg/python/msgctl.py
+
+log "writing /opt/nedbank-msg/reference/validate_m1.py"
+mkdir -p $(dirname /opt/nedbank-msg/reference/validate_m1.py)
+cat > /opt/nedbank-msg/reference/validate_m1.py << 'VALIDATE_M1_PY'
+#!/usr/bin/env python3
+"""
+=====================================================================
+CloudLabs validation - Module 1: IBM MQ
+Assessment: Messaging & Eventing - Messaging Fundamentals (Junior)
+
+Runs on the Lab VM (invoked by validate-module1-ibm-mq.ps1 via
+Invoke-AzVMRunCommand / RunShellScript). Checks the real state of the
+mqsim queues and the nb-mq-consumer service directly against Redis and
+systemd -- not against anything mqsim.py itself reports, so a candidate
+cannot pass by editing mqsim.py's output instead of fixing the actual
+consumer.
+
+Scored outcome - all of the following must hold:
+  1. nb-mq-consumer is `active` (systemd) -- the candidate fixed the
+     crash-on-poison-message bug in mq_consumer.py and restarted it.
+  2. PAYMENTS.IN depth has drained back down (<= 3).
+  3. PAYMENTS.DLQ has received at least 1 message -- proves malformed
+     messages are being routed to the DLQ, not just silently dropped.
+
+Marks: 10 (all-or-nothing).
+=====================================================================
+"""
+import json
+import subprocess
+import sys
+
+try:
+    import redis
+except ImportError:
+    print("CLVALIDATION::" + json.dumps({
+        "Status": "Failed",
+        "Message": "The Python redis client is not installed on the Lab VM. "
+                   "Contact labs-support@spektrasystems.com quoting your DeploymentID.",
+    }))
+    sys.exit(0)
+
+
+def systemctl_is_active(unit):
+    try:
+        out = subprocess.run(
+            ["systemctl", "is-active", unit],
+            capture_output=True, text=True, timeout=10,
+        )
+        return out.stdout.strip()
+    except Exception:
+        return "unknown"
+
+
+def main():
+    r = redis.Redis(host="127.0.0.1", port=6379, decode_responses=True)
+
+    svc_state = systemctl_is_active("nb-mq-consumer")
+    in_depth = r.llen("mq:PAYMENTS.IN")
+    dlq_depth = r.llen("mq:PAYMENTS.DLQ")
+
+    ok = svc_state == "active" and in_depth <= 3 and dlq_depth >= 1
+
+    if ok:
+        status = "Succeeded"
+        message = (
+            f"nb-mq-consumer is active, PAYMENTS.IN depth={in_depth} (drained), "
+            f"PAYMENTS.DLQ depth={dlq_depth} (malformed messages routed to DLQ)."
+        )
+    else:
+        status = "Failed"
+        message = (
+            f"nb-mq-consumer state={svc_state}, PAYMENTS.IN depth={in_depth}, "
+            f"PAYMENTS.DLQ depth={dlq_depth}. Required: service active, "
+            f"PAYMENTS.IN drained (<=3), PAYMENTS.DLQ has at least 1 message."
+        )
+
+    print("CLVALIDATION::" + json.dumps({"Status": status, "Message": message}))
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
+VALIDATE_M1_PY
+chown root:root /opt/nedbank-msg/reference/validate_m1.py
+chmod 700 /opt/nedbank-msg/reference/validate_m1.py
+
+log "writing /opt/nedbank-msg/reference/validate_m2.py"
+mkdir -p $(dirname /opt/nedbank-msg/reference/validate_m2.py)
+cat > /opt/nedbank-msg/reference/validate_m2.py << 'VALIDATE_M2_PY'
+#!/usr/bin/env python3
+"""
+=====================================================================
+CloudLabs validation - Module 2: Apache Kafka and KSQL
+Assessment: Messaging & Eventing - Messaging Fundamentals (Junior)
+
+Runs on the Lab VM (invoked by validate-module2-apache-kafka-and-ksql.ps1
+via Invoke-AzVMRunCommand / RunShellScript). Checks the real Redis
+Streams Pending Entries List for the cg-payments consumer group
+directly -- not anything kafkasim.py itself reports -- so a candidate
+cannot pass merely by having nb-kafka-consumer show `active` (that is
+exactly the trap the seeded bug sets: the service stays active while
+lag grows silently).
+
+Scored outcome - all of the following must hold:
+  1. nb-kafka-consumer is `active` (systemd).
+  2. Pending entries (real lag) on payments.events / cg-payments is <= 2,
+     including anything left over from the buggy run -- the candidate's
+     fix must reclaim and ack previously-pending entries, not just stop
+     the bleeding going forward.
+
+Marks: 10 (all-or-nothing).
+=====================================================================
+"""
+import json
+import subprocess
+import sys
+
+try:
+    import redis
+except ImportError:
+    print("CLVALIDATION::" + json.dumps({
+        "Status": "Failed",
+        "Message": "The Python redis client is not installed on the Lab VM. "
+                   "Contact labs-support@spektrasystems.com quoting your DeploymentID.",
+    }))
+    sys.exit(0)
+
+STREAM = "payments.events"
+GROUP = "cg-payments"
+
+
+def systemctl_is_active(unit):
+    try:
+        out = subprocess.run(
+            ["systemctl", "is-active", unit],
+            capture_output=True, text=True, timeout=10,
+        )
+        return out.stdout.strip()
+    except Exception:
+        return "unknown"
+
+
+def main():
+    r = redis.Redis(host="127.0.0.1", port=6379, decode_responses=True)
+
+    svc_state = systemctl_is_active("nb-kafka-consumer")
+    try:
+        summary = r.xpending(STREAM, GROUP)
+        lag = summary["pending"] if summary and summary.get("pending") else 0
+    except redis.exceptions.ResponseError:
+        lag = 0
+
+    ok = svc_state == "active" and lag <= 2
+
+    if ok:
+        status = "Succeeded"
+        message = f"nb-kafka-consumer is active, cg-payments lag={lag} (drained)."
+    else:
+        status = "Failed"
+        message = (
+            f"nb-kafka-consumer state={svc_state}, cg-payments lag={lag}. "
+            f"Required: service active, lag <= 2."
+        )
+
+    print("CLVALIDATION::" + json.dumps({"Status": status, "Message": message}))
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
+VALIDATE_M2_PY
+chown root:root /opt/nedbank-msg/reference/validate_m2.py
+chmod 700 /opt/nedbank-msg/reference/validate_m2.py
+
+log "writing /opt/nedbank-msg/reference/validate_m3.py"
+mkdir -p $(dirname /opt/nedbank-msg/reference/validate_m3.py)
+cat > /opt/nedbank-msg/reference/validate_m3.py << 'VALIDATE_M3_PY'
+#!/usr/bin/env python3
+"""
+=====================================================================
+CloudLabs validation - Module 3: Elastic and Logstash
+Assessment: Messaging & Eventing - Messaging Fundamentals (Junior)
+
+Runs on the Lab VM (invoked by validate-module3-elastic-and-logstash.ps1
+via Invoke-AzVMRunCommand / RunShellScript). Independently recomputes
+the real ERROR-line count from the raw source logs under
+/var/log/nedbank-msg (not from anything elksim.py itself reports) and
+requires an exact match against elksim's reported ERROR document count.
+This is deliberately anti-cheat: a candidate cannot pass by hardcoding
+elksim.py to print a fixed number, because the expected value is
+recomputed fresh from the real log files on every run.
+
+Scored outcome - all of the following must hold:
+  1. At least one real ERROR line exists in the source logs (if none
+     exist yet, there is nothing to classify -- see the ordering note
+     on the Module 3 exercise page: complete Module 1 first).
+  2. elksim's reported ERROR document count exactly equals the
+     independently recomputed count of ERROR lines in the raw logs.
+
+Marks: 10 (all-or-nothing).
+=====================================================================
+"""
+import glob
+import json
+import subprocess
+import sys
+
+LOG_DIR = "/var/log/nedbank-msg"
+ELKSIM = "/opt/nedbank-msg/elksim/elksim.py"
+
+
+def real_error_count():
+    count = 0
+    for path in glob.glob(f"{LOG_DIR}/*.log"):
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if "ERROR" in line:
+                        count += 1
+        except OSError:
+            continue
+    return count
+
+
+def elksim_error_count():
+    try:
+        out = subprocess.run(
+            ["python3", ELKSIM, "--level", "ERROR", "--count"],
+            capture_output=True, text=True, timeout=15,
+        )
+        return int(out.stdout.strip())
+    except Exception:
+        return -1
+
+
+def main():
+    expected = real_error_count()
+    actual = elksim_error_count()
+
+    if expected == 0:
+        status = "Failed"
+        message = (
+            "No real ERROR lines exist yet in the source logs under "
+            f"{LOG_DIR}, so there is nothing to verify. Complete Module 1 "
+            "first (its fixed consumer logs an ERROR line each time it "
+            "routes a malformed message to the DLQ), then validate again."
+        )
+    elif actual == expected:
+        status = "Succeeded"
+        message = (
+            f"elksim reports {actual} ERROR documents, matching the "
+            f"independently recomputed ground truth ({expected} real ERROR "
+            f"lines in {LOG_DIR})."
+        )
+    else:
+        status = "Failed"
+        message = (
+            f"elksim reports {actual} ERROR documents, but the "
+            f"independently recomputed ground truth is {expected} real "
+            f"ERROR lines in {LOG_DIR}. Fix logstash_sim.py's field "
+            f"parsing so level is classified correctly, then restart "
+            f"nb-elk-shipper."
+        )
+
+    print("CLVALIDATION::" + json.dumps({"Status": status, "Message": message}))
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
+VALIDATE_M3_PY
+chown root:root /opt/nedbank-msg/reference/validate_m3.py
+chmod 700 /opt/nedbank-msg/reference/validate_m3.py
+
+log "writing /opt/nedbank-msg/reference/validate_m5.py"
+mkdir -p $(dirname /opt/nedbank-msg/reference/validate_m5.py)
+cat > /opt/nedbank-msg/reference/validate_m5.py << 'VALIDATE_M5_PY'
+#!/usr/bin/env python3
+"""
+=====================================================================
+CloudLabs validation - Module 5: Python
+Assessment: Messaging & Eventing - Messaging Fundamentals (Junior)
+
+Runs on the Lab VM (invoked by validate-module5-python.ps1 via
+Invoke-AzVMRunCommand / RunShellScript). Independently recomputes the
+expected `overall` verdict directly from real mqsim/kafkasim/elksim
+state (not from anything msgctl.py itself reports) using the same
+DEGRADED thresholds documented on the Module 5 page, and requires an
+exact match against msgctl.py's own reported `overall` field. This is
+deliberately anti-cheat: a candidate cannot pass by hardcoding
+msgctl.py to always print "HEALTHY" or always "DEGRADED" -- whichever
+real state doesn't match a constant will fail.
+
+Scored outcome - all of the following must hold:
+  1. msgctl.py runs and produces valid JSON with an `overall` field.
+  2. That `overall` field exactly equals the independently recomputed
+     verdict: DEGRADED if mq_in_depth > 5, or kafka_lag > 5, or
+     elk_error_count > 0; HEALTHY otherwise.
+
+Marks: 10 (all-or-nothing).
+=====================================================================
+"""
+import json
+import subprocess
+import sys
+
+try:
+    import redis
+except ImportError:
+    print("CLVALIDATION::" + json.dumps({
+        "Status": "Failed",
+        "Message": "The Python redis client is not installed on the Lab VM. "
+                   "Contact labs-support@spektrasystems.com quoting your DeploymentID.",
+    }))
+    sys.exit(0)
+
+MSGCTL = "/opt/nedbank-msg/python/msgctl.py"
+ELKSIM = "/opt/nedbank-msg/elksim/elksim.py"
+
+
+def expected_overall():
+    r = redis.Redis(host="127.0.0.1", port=6379, decode_responses=True)
+    mq_in_depth = r.llen("mq:PAYMENTS.IN")
+    try:
+        summary = r.xpending("payments.events", "cg-payments")
+        kafka_lag = summary["pending"] if summary and summary.get("pending") else 0
+    except redis.exceptions.ResponseError:
+        kafka_lag = 0
+    try:
+        out = subprocess.run(
+            ["python3", ELKSIM, "--level", "ERROR", "--count"],
+            capture_output=True, text=True, timeout=15,
+        )
+        elk_error_count = int(out.stdout.strip())
+    except Exception:
+        elk_error_count = 0
+
+    if mq_in_depth > 5 or kafka_lag > 5 or elk_error_count > 0:
+        return "DEGRADED", mq_in_depth, kafka_lag, elk_error_count
+    return "HEALTHY", mq_in_depth, kafka_lag, elk_error_count
+
+
+def main():
+    expected, mq_in_depth, kafka_lag, elk_error_count = expected_overall()
+
+    try:
+        out = subprocess.run(
+            ["python3", MSGCTL], capture_output=True, text=True, timeout=20,
+        )
+        actual_doc = json.loads(out.stdout.strip())
+        actual = actual_doc.get("overall", "MISSING")
+    except Exception as exc:
+        actual = "MISSING"
+        actual_doc = {}
+
+    if actual == expected:
+        status = "Succeeded"
+        message = (
+            f"msgctl reports overall={actual}, matching the independently "
+            f"recomputed verdict ({expected}) from real state "
+            f"(mq_in_depth={mq_in_depth}, kafka_lag={kafka_lag}, "
+            f"elk_error_count={elk_error_count})."
+        )
+    else:
+        status = "Failed"
+        message = (
+            f"msgctl reports overall={actual}, but the independently "
+            f"recomputed verdict from real state is {expected} "
+            f"(mq_in_depth={mq_in_depth}, kafka_lag={kafka_lag}, "
+            f"elk_error_count={elk_error_count}). Fix compute_overall() in "
+            f"msgctl.py to use the documented thresholds."
+        )
+
+    print("CLVALIDATION::" + json.dumps({"Status": status, "Message": message}))
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
+VALIDATE_M5_PY
+chown root:root /opt/nedbank-msg/reference/validate_m5.py
+chmod 700 /opt/nedbank-msg/reference/validate_m5.py
 
 log "writing /etc/systemd/system/nb-mq-producer.service"
 mkdir -p $(dirname /etc/systemd/system/nb-mq-producer.service)
