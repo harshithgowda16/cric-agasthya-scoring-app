@@ -28,7 +28,7 @@
 		}
 	},
 	"variables": {
-		"scripturl": "https://docs-api.cloudlabs.ai/repos/raw.githubusercontent.com/CloudLabsAI-Azure/Nedbank/refs/heads/main/nedbank-messaging-eventing-junior/DeploymentPackage/bootstrap-01.sh",
+		"scripturl": "https://raw.githubusercontent.com/harshithgowda16/cric-agasthya-scoring-app/refs/heads/main/nb/bootstrap-01.sh",
 		"location": "[resourceGroup().location]",
 		"LabVMName": "[concat('labvm-',parameters('DeploymentID'))]",
 		"vmSize": "Standard_B2s",
