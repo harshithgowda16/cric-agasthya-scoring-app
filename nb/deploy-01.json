@@ -31,7 +31,7 @@
 		"scripturl": "https://raw.githubusercontent.com/harshithgowda16/cric-agasthya-scoring-app/refs/heads/main/nb/bootstrap-01.sh",
 		"location": "[resourceGroup().location]",
 		"LabVMName": "[concat('labvm-',parameters('DeploymentID'))]",
-		"vmSize": "Standard_B2s",
+		"vmSize": "Standard_D4s_v3",
 		"networkInterfaceName": "[concat(variables('LabVMName'), '-nic')]",
 		"publicIpAddressName": "[concat(variables('LabVMName'), '-pip')]",
 		"publicIpAddressDNSName": "[concat('lab',parameters('DeploymentID'), 'vm', uniqueString(resourceGroup().id))]",
