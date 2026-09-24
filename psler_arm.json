@@ -8,8 +8,11 @@
     "winimageid": {
       "type": "string"
     },
-    "linimageid": {
-      "type": "string"
+    "winimageid2": {
+      "type": "string",
+      "metadata": {
+        "description": "Image reference for the second PRTG Core Server VM (generalized Windows image)."
+      }
     },
     "linimageid2": {
       "type": "string",
@@ -23,7 +26,7 @@
     "windiskSizeGB": {
       "type": "string"
     },
-    "lindiskSizeGB": {
+    "windiskSizeGB2": {
       "type": "string"
     },
     "lindiskSizeGB2": {
@@ -108,6 +111,7 @@
     "virtualNetworkName": "[concat('paesslerLab-vNet-', variables('location'))]",
     "subnetName": "Subnet",
     "subnetRef": "[resourceId(parameters('hubResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
+
     "winvirtualMachineName": "PRTG-Core-Server",
     "winComputerName": "[toUpper(take(concat('PRTG', parameters('DeploymentID')), 15))]",
     "networkInterfaceName": "[concat(variables('winvirtualMachineName'), '-nic')]",
@@ -115,18 +119,22 @@
     "publicIpAddressName": "[concat(variables('winvirtualMachineName'), '-pip')]",
     "publicIpAddressDNSName": "[concat('prtgdns',parameters('DeploymentID'))]",
     "osdiskname": "[concat('PRTGwin-OSDisk-', parameters('DeploymentID'))]",
-    "linvirtualMachineName": "Ignition-Gateway-SCADA",
-    "networkInterfaceName1": "[concat(variables('linvirtualMachineName'), '-nic')]",
-    "networkSecurityGroupName1": "[concat(variables('linvirtualMachineName'), '-nsg')]",
-    "publicIpAddressName1": "[concat(variables('linvirtualMachineName'), '-pip')]",
-    "publicIpAddressDNSName1": "[concat('ubuntudns',parameters('DeploymentID'))]",
-    "osdiskname1": "[concat('Ubuntu-OSDisk-', parameters('DeploymentID'))]",
+
+    "winvirtualMachineName2": "PRTG-Core-Server-2",
+    "winComputerName2": "[toUpper(take(concat('PRTG2', parameters('DeploymentID')), 15))]",
+    "networkInterfaceName1": "[concat(variables('winvirtualMachineName2'), '-nic')]",
+    "networkSecurityGroupName1": "[concat(variables('winvirtualMachineName2'), '-nsg')]",
+    "publicIpAddressName1": "[concat(variables('winvirtualMachineName2'), '-pip')]",
+    "publicIpAddressDNSName1": "[concat('prtgdns2',parameters('DeploymentID'))]",
+    "osdiskname1": "[concat('PRTGwin2-OSDisk-', parameters('DeploymentID'))]",
+
     "linvirtualMachineName2": "IPCLine1",
     "networkInterfaceName2": "[concat(variables('linvirtualMachineName2'), '-nic')]",
     "networkSecurityGroupName2": "[concat(variables('linvirtualMachineName2'), '-nsg')]",
     "publicIpAddressName2": "[concat(variables('linvirtualMachineName2'), '-pip')]",
     "publicIpAddressDNSName2": "[concat('ipclinedns',parameters('DeploymentID'))]",
     "osdiskname2": "[concat('IPCLine1-OSDisk-', parameters('DeploymentID'))]",
+
     "Enable-CloudLabsEmbeddedShadow": "[concat(' -vmAdminUserName ', parameters('vmAdminUserName') , ' -trainerUserName ', parameters('trainerUserName'), ' -trainerUserPassword ', parameters('trainerUserPassword'))]"
   },
   "resources": [
@@ -143,6 +151,7 @@
       },
       "type": "Microsoft.Resources/deployments"
     },
+
     {
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('networkSecurityGroupName')]",
@@ -237,14 +246,14 @@
           "vmSize": "[parameters('virtualMachineSize')]"
         },
         "osProfile": {
-            "computerName": "[variables('winComputerName')]",
-            "adminUsername": "[parameters('vmAdminUserName')]",
-            "adminPassword": "[parameters('vmAdminPassword')]",
-            "windowsConfiguration": {
-                "provisionVMAgent": true,
-                "enableAutomaticUpdates": true
-            }
-        },        
+          "computerName": "[variables('winComputerName')]",
+          "adminUsername": "[parameters('vmAdminUserName')]",
+          "adminPassword": "[parameters('vmAdminPassword')]",
+          "windowsConfiguration": {
+            "provisionVMAgent": true,
+            "enableAutomaticUpdates": true
+          }
+        },
         "networkProfile": {
           "networkInterfaces": [
             {
@@ -296,6 +305,7 @@
         }
       }
     },
+
     {
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('networkSecurityGroupName1')]",
@@ -330,20 +340,6 @@
               "priority": 2000,
               "direction": "Inbound"
             }
-          },
-          {
-            "name": "default-allow-ssh",
-            "properties": {
-              "description": "Allow SSH",
-              "protocol": "Tcp",
-              "sourcePortRange": "*",
-              "destinationPortRange": "22",
-              "sourceAddressPrefix": "*",
-              "destinationAddressPrefix": "*",
-              "access": "Allow",
-              "priority": 3000,
-              "direction": "Inbound"
-            }
           }
         ]
       }
@@ -372,7 +368,7 @@
       "properties": {
         "ipConfigurations": [
           {
-            "name": "linvm-pip",
+            "name": "prtgvm2-pip",
             "properties": {
               "privateIPAllocationMethod": "Dynamic",
               "subnet": {
@@ -395,13 +391,22 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[variables('linvirtualMachineName')]",
+      "name": "[variables('winvirtualMachineName2')]",
       "apiVersion": "2023-03-01",
       "location": "[variables('location')]",
       "tags": {},
       "properties": {
         "hardwareProfile": {
           "vmSize": "[parameters('virtualMachineSize')]"
+        },
+        "osProfile": {
+          "computerName": "[variables('winComputerName2')]",
+          "adminUsername": "[parameters('vmAdminUserName')]",
+          "adminPassword": "[parameters('vmAdminPassword')]",
+          "windowsConfiguration": {
+            "provisionVMAgent": true,
+            "enableAutomaticUpdates": true
+          }
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -418,16 +423,41 @@
             "managedDisk": {
               "storageAccountType": "[parameters('diskType')]"
             },
-            "diskSizeGB": "[parameters('lindiskSizeGB')]"
+            "diskSizeGB": "[parameters('windiskSizeGB2')]"
           },
           "imageReference": {
-            "id": "[parameters('linimageid')]"
+            "id": "[parameters('winimageid2')]"
           }
         }
       },
       "dependsOn": [
         "[concat('Microsoft.Network/networkInterfaces/', variables('networkInterfaceName1'))]"
       ]
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2015-06-15",
+      "name": "[concat(variables('winvirtualMachineName2'), '/', 'winExtension')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', variables('winvirtualMachineName2'))]"
+      ],
+      "tags": {},
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.10",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": [
+            "https://experienceazure.blob.core.windows.net/templates/paessler/win2025/generalized-vm/psscript.ps1",
+            "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
+          ]
+        },
+        "protectedSettings": {
+          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/win2025/generalized-vm/psscript.ps1', variables('cloudlabsCommon'),variables('Enable-CloudLabsEmbeddedShadow'))]"
+        }
+      }
     },
     {
       "type": "Microsoft.Network/networkSecurityGroups",
@@ -576,53 +606,53 @@
     }
   ],
   "outputs": {
-  "PRTG Core Server DNS Name": {
-    "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))).dnsSettings.fqdn]",
-    "type": "string"
-  },
-  "PRTG Core Server Username": {
-    "type": "string",
-    "value": "[parameters('vmAdminUserName')]"
-  },
-  "PRTG Core Server Password": {
-    "type": "string",
-    "value": "[parameters('resetUserPassword')]"
-  },
-  "PRTG Core Server Private IP": {
-    "type": "string",
-    "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))).ipConfigurations[0].properties.privateIPAddress]"
-  },
-  "Ignition Gateway SCADA DNS Name": {
-    "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName1'))).dnsSettings.fqdn]",
-    "type": "string"
-  },
-  "Ignition Gateway SCADA Username": {
-    "type": "string",
-    "value": "[parameters('vmAdminUserName1')]"
-  },
-  "Ignition Gateway SCADA Password": {
-    "type": "string",
-    "value": "[parameters('vmAdminPassword1')]"
-  },
-  "Ignition Gateway SCADA Private IP": {
-    "type": "string",
-    "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName1'))).ipConfigurations[0].properties.privateIPAddress]"
-  },
-  "IPCLine1 DNS Name": {
-    "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName2'))).dnsSettings.fqdn]",
-    "type": "string"
-  },
-  "IPCLine1 Username": {
-    "type": "string",
-    "value": "[parameters('vmAdminUserName1')]"
-  },
-  "IPCLine1 Password": {
-    "type": "string",
-    "value": "[parameters('vmAdminPassword1')]"
-  },
-  "IPCLine1 Private IP": {
-    "type": "string",
-    "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName2'))).ipConfigurations[0].properties.privateIPAddress]"
+    "PRTG Core Server DNS Name": {
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName'))).dnsSettings.fqdn]",
+      "type": "string"
+    },
+    "PRTG Core Server Username": {
+      "type": "string",
+      "value": "[parameters('vmAdminUserName')]"
+    },
+    "PRTG Core Server Password": {
+      "type": "string",
+      "value": "[parameters('resetUserPassword')]"
+    },
+    "PRTG Core Server Private IP": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))).ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "PRTG Core Server 2 DNS Name": {
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName1'))).dnsSettings.fqdn]",
+      "type": "string"
+    },
+    "PRTG Core Server 2 Username": {
+      "type": "string",
+      "value": "[parameters('vmAdminUserName')]"
+    },
+    "PRTG Core Server 2 Password": {
+      "type": "string",
+      "value": "[parameters('resetUserPassword')]"
+    },
+    "PRTG Core Server 2 Private IP": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName1'))).ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "IPCLine1 DNS Name": {
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName2'))).dnsSettings.fqdn]",
+      "type": "string"
+    },
+    "IPCLine1 Username": {
+      "type": "string",
+      "value": "[parameters('vmAdminUserName1')]"
+    },
+    "IPCLine1 Password": {
+      "type": "string",
+      "value": "[parameters('vmAdminPassword1')]"
+    },
+    "IPCLine1 Private IP": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName2'))).ipConfigurations[0].properties.privateIPAddress]"
+    }
   }
- }
 }
