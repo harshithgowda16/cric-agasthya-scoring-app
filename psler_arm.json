@@ -449,13 +449,13 @@
         "typeHandlerVersion": "1.10",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "fileUris": [
-            "https://experienceazure.blob.core.windows.net/templates/paessler/Lab3/psscript.ps1",
+         "fileUris": [
+            "https://experienceazure.blob.core.windows.net/templates/paessler/win2025/generalized-vm/psscript.ps1",
             "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
           ]
         },
         "protectedSettings": {
-          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/Lab3/psscript.ps1', variables('cloudlabsCommon'),variables('Enable-CloudLabsEmbeddedShadow'), ' -resetUserPassword ', parameters('resetUserPassword'))]"
+          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/win2025/generalized-vm/psscript.ps1', variables('cloudlabsCommon'),variables('Enable-CloudLabsEmbeddedShadow'))]"
         }
       }
     },
