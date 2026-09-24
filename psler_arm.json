@@ -8,10 +8,10 @@
     "winimageid": {
       "type": "string"
     },
-    "winimageid2": {
+    "probeimageid": {
       "type": "string",
       "metadata": {
-        "description": "Image reference for the second PRTG Core Server VM (generalized Windows image)."
+        "description": "Image reference for the PRTG Remote Probe VM (generalized Windows image)."
       }
     },
     "linimageid2": {
@@ -26,7 +26,7 @@
     "windiskSizeGB": {
       "type": "string"
     },
-    "windiskSizeGB2": {
+    "probediskSizeGB": {
       "type": "string"
     },
     "lindiskSizeGB2": {
@@ -120,13 +120,13 @@
     "publicIpAddressDNSName": "[concat('prtgdns',parameters('DeploymentID'))]",
     "osdiskname": "[concat('PRTGwin-OSDisk-', parameters('DeploymentID'))]",
 
-    "winvirtualMachineName2": "PRTG-Core-Server-2",
-    "winComputerName2": "[toUpper(take(concat('PRTG2', parameters('DeploymentID')), 15))]",
-    "networkInterfaceName1": "[concat(variables('winvirtualMachineName2'), '-nic')]",
-    "networkSecurityGroupName1": "[concat(variables('winvirtualMachineName2'), '-nsg')]",
-    "publicIpAddressName1": "[concat(variables('winvirtualMachineName2'), '-pip')]",
-    "publicIpAddressDNSName1": "[concat('prtgdns2',parameters('DeploymentID'))]",
-    "osdiskname1": "[concat('PRTGwin2-OSDisk-', parameters('DeploymentID'))]",
+    "probevirtualMachineName": "PRTG-Remote-Probe",
+    "probeComputerName": "[toUpper(take(concat('PROBE', parameters('DeploymentID')), 15))]",
+    "networkInterfaceName1": "[concat(variables('probevirtualMachineName'), '-nic')]",
+    "networkSecurityGroupName1": "[concat(variables('probevirtualMachineName'), '-nsg')]",
+    "publicIpAddressName1": "[concat(variables('probevirtualMachineName'), '-pip')]",
+    "publicIpAddressDNSName1": "[concat('prtgprobedns',parameters('DeploymentID'))]",
+    "osdiskname1": "[concat('PRTGProbe-OSDisk-', parameters('DeploymentID'))]",
 
     "linvirtualMachineName2": "IPCLine1",
     "networkInterfaceName2": "[concat(variables('linvirtualMachineName2'), '-nic')]",
@@ -368,7 +368,7 @@
       "properties": {
         "ipConfigurations": [
           {
-            "name": "prtgvm2-pip",
+            "name": "prtgprobevm-pip",
             "properties": {
               "privateIPAllocationMethod": "Dynamic",
               "subnet": {
@@ -391,7 +391,7 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[variables('winvirtualMachineName2')]",
+      "name": "[variables('probevirtualMachineName')]",
       "apiVersion": "2023-03-01",
       "location": "[variables('location')]",
       "tags": {},
@@ -400,7 +400,7 @@
           "vmSize": "[parameters('virtualMachineSize')]"
         },
         "osProfile": {
-          "computerName": "[variables('winComputerName2')]",
+          "computerName": "[variables('probeComputerName')]",
           "adminUsername": "[parameters('vmAdminUserName')]",
           "adminPassword": "[parameters('vmAdminPassword')]",
           "windowsConfiguration": {
@@ -423,10 +423,10 @@
             "managedDisk": {
               "storageAccountType": "[parameters('diskType')]"
             },
-            "diskSizeGB": "[parameters('windiskSizeGB2')]"
+            "diskSizeGB": "[parameters('probediskSizeGB')]"
           },
           "imageReference": {
-            "id": "[parameters('winimageid2')]"
+            "id": "[parameters('probeimageid')]"
           }
         }
       },
@@ -437,10 +437,10 @@
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "apiVersion": "2015-06-15",
-      "name": "[concat(variables('winvirtualMachineName2'), '/', 'winExtension')]",
+      "name": "[concat(variables('probevirtualMachineName'), '/', 'winExtension')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', variables('winvirtualMachineName2'))]"
+        "[concat('Microsoft.Compute/virtualMachines/', variables('probevirtualMachineName'))]"
       ],
       "tags": {},
       "properties": {
@@ -450,15 +450,16 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "fileUris": [
-            "https://experienceazure.blob.core.windows.net/templates/paessler/win2025/generalized-vm/psscript.ps1",
+            "https://experienceazure.blob.core.windows.net/templates/paessler/Lab3/psscript.ps1",
             "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
           ]
         },
         "protectedSettings": {
-          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/win2025/generalized-vm/psscript.ps1', variables('cloudlabsCommon'),variables('Enable-CloudLabsEmbeddedShadow'))]"
+          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/Lab3/psscript.ps1', variables('cloudlabsCommon'),variables('Enable-CloudLabsEmbeddedShadow'), ' -resetUserPassword ', parameters('resetUserPassword'))]"
         }
       }
     },
+
     {
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('networkSecurityGroupName2')]",
@@ -622,19 +623,19 @@
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))).ipConfigurations[0].properties.privateIPAddress]"
     },
-    "PRTG Core Server 2 DNS Name": {
+    "PRTG Remote Probe DNS Name": {
       "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName1'))).dnsSettings.fqdn]",
       "type": "string"
     },
-    "PRTG Core Server 2 Username": {
+    "PRTG Remote Probe Username": {
       "type": "string",
       "value": "[parameters('vmAdminUserName')]"
     },
-    "PRTG Core Server 2 Password": {
+    "PRTG Remote Probe Password": {
       "type": "string",
       "value": "[parameters('resetUserPassword')]"
     },
-    "PRTG Core Server 2 Private IP": {
+    "PRTG Remote Probe Private IP": {
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName1'))).ipConfigurations[0].properties.privateIPAddress]"
     },
