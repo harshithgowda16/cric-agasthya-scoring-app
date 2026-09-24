@@ -9,7 +9,7 @@
       "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/winimgdef-gen/versions/latest"
     },
     "winimageid2": {
-      "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourcegroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025-generalized/versions/Latest"
+      "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourcegroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025-generalized/versions/latest"
     },
     "linimageid2": {
       "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/IPCLine1VM-image-OT-lab/versions/latest"
