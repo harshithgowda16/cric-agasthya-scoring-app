@@ -8,7 +8,7 @@
     "winimageid": {
       "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/winimgdef-gen/versions/latest"
     },
-    "probeimageid": {
+    "winimageid2": {
       "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourcegroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025-generalized/versions/latest"
     },
     "linimageid2": {
@@ -17,7 +17,7 @@
     "windiskSizeGB": {
       "value": "128"
     },
-    "probediskSizeGB": {
+    "windiskSizeGB2": {
       "value": "128"
     },
     "lindiskSizeGB2": {
