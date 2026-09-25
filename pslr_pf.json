@@ -6,7 +6,7 @@
       "value": "Standard_F4s_v2"
     },
     "winimageid": {
-      "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/winimgdef-gen/versions/latest"
+      "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/L2_prg_core_server/versions/latest"
     },
     "winimageid2": {
       "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourcegroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025-generalized/versions/latest"
