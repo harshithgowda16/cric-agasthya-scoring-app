@@ -8,7 +8,7 @@
     "winimageid": {
       "type": "string"
     },
-    "probeimageid": {
+    "winimageid2": {
       "type": "string",
       "metadata": {
         "description": "Image reference for the PRTG Remote Probe VM (generalized Windows image)."
@@ -17,7 +17,7 @@
     "linimageid2": {
       "type": "string",
       "metadata": {
-        "description": "Image reference for IPCLine1 VM (sharedimagegallary/images/IPCLine1VM-image-OT-lab). NOTE: this is a SPECIALIZED image, so no osProfile is supplied for this VM - login credentials are whatever was baked into the image when it was captured."
+        "description": "Image reference for PRTG Multi-Platform-Probe VM (sharedimagegallary/images/IPCLine1VM-image-OT-lab). NOTE: this is a SPECIALIZED image, so no osProfile is supplied for this VM - login credentials are whatever was baked into the image when it was captured."
       }
     },
     "publicIpAddressType": {
@@ -26,7 +26,7 @@
     "windiskSizeGB": {
       "type": "string"
     },
-    "probediskSizeGB": {
+    "windiskSizeGB2": {
       "type": "string"
     },
     "lindiskSizeGB2": {
@@ -128,12 +128,12 @@
     "publicIpAddressDNSName1": "[concat('prtgprobedns',parameters('DeploymentID'))]",
     "osdiskname1": "[concat('PRTGProbe-OSDisk-', parameters('DeploymentID'))]",
 
-    "linvirtualMachineName2": "IPCLine1",
+    "linvirtualMachineName2": "PRTG-Multi-Platform-Probe",
     "networkInterfaceName2": "[concat(variables('linvirtualMachineName2'), '-nic')]",
     "networkSecurityGroupName2": "[concat(variables('linvirtualMachineName2'), '-nsg')]",
     "publicIpAddressName2": "[concat(variables('linvirtualMachineName2'), '-pip')]",
-    "publicIpAddressDNSName2": "[concat('ipclinedns',parameters('DeploymentID'))]",
-    "osdiskname2": "[concat('IPCLine1-OSDisk-', parameters('DeploymentID'))]",
+    "publicIpAddressDNSName2": "[concat('prtgmppdns',parameters('DeploymentID'))]",
+    "osdiskname2": "[concat('PRTGMPP-OSDisk-', parameters('DeploymentID'))]",
 
     "Enable-CloudLabsEmbeddedShadow": "[concat(' -vmAdminUserName ', parameters('vmAdminUserName') , ' -trainerUserName ', parameters('trainerUserName'), ' -trainerUserPassword ', parameters('trainerUserPassword'))]"
   },
@@ -423,10 +423,10 @@
             "managedDisk": {
               "storageAccountType": "[parameters('diskType')]"
             },
-            "diskSizeGB": "[parameters('probediskSizeGB')]"
+            "diskSizeGB": "[parameters('windiskSizeGB2')]"
           },
           "imageReference": {
-            "id": "[parameters('probeimageid')]"
+            "id": "[parameters('winimageid2')]"
           }
         }
       },
@@ -449,13 +449,13 @@
         "typeHandlerVersion": "1.10",
         "autoUpgradeMinorVersion": true,
         "settings": {
-         "fileUris": [
-            "https://experienceazure.blob.core.windows.net/templates/paessler/win2025/generalized-vm/psscript.ps1",
+          "fileUris": [
+            "https://experienceazure.blob.core.windows.net/templates/paessler/Lab3/psscript.ps1",
             "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
           ]
         },
         "protectedSettings": {
-          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/win2025/generalized-vm/psscript.ps1', variables('cloudlabsCommon'),variables('Enable-CloudLabsEmbeddedShadow'))]"
+          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/Lab3/psscript.ps1', variables('cloudlabsCommon'),variables('Enable-CloudLabsEmbeddedShadow'), ' -resetUserPassword ', parameters('resetUserPassword'))]"
         }
       }
     },
@@ -522,7 +522,7 @@
       "properties": {
         "ipConfigurations": [
           {
-            "name": "ipclinevm-pip",
+            "name": "prtgmppvm-pip",
             "properties": {
               "privateIPAllocationMethod": "Dynamic",
               "subnet": {
@@ -589,7 +589,7 @@
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "apiVersion": "2015-06-15",
-      "name": "[concat(variables('linvirtualMachineName2'), '/', 'ipclineProvision')]",
+      "name": "[concat(variables('linvirtualMachineName2'), '/', 'mppProvision')]",
       "location": "[variables('location')]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', variables('linvirtualMachineName2'))]"
@@ -639,19 +639,19 @@
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName1'))).ipConfigurations[0].properties.privateIPAddress]"
     },
-    "IPCLine1 DNS Name": {
+    "PRTG Multi-Platform-Probe DNS Name": {
       "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAddressName2'))).dnsSettings.fqdn]",
       "type": "string"
     },
-    "IPCLine1 Username": {
+    "PRTG Multi-Platform-Probe Username": {
       "type": "string",
       "value": "[parameters('vmAdminUserName1')]"
     },
-    "IPCLine1 Password": {
+    "PRTG Multi-Platform-Probe Password": {
       "type": "string",
       "value": "[parameters('vmAdminPassword1')]"
     },
-    "IPCLine1 Private IP": {
+    "PRTG Multi-Platform-Probe Private IP": {
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName2'))).ipConfigurations[0].properties.privateIPAddress]"
     }
