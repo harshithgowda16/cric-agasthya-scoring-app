@@ -143,7 +143,7 @@
     "publicIpAddressDNSName2": "[concat('prtgmppdns',parameters('DeploymentID'))]",
     "osdiskname2": "[concat('PRTGMPP-OSDisk-', parameters('DeploymentID'))]",
     "Enable-CloudLabsEmbeddedShadow": "[concat(' -vmAdminUserName ', parameters('vmAdminUserName') , ' -trainerUserName ', parameters('trainerUserName'), ' -trainerUserPassword ', parameters('trainerUserPassword'))]",
-    "mppComputerName": "[toLower(take(concat('prtgmpp', parameters('DeploymentID')), 15))]",
+    "mppComputerName": "[variables('mppHostname')]",
     "mppOsProfile": {
       "computerName": "[variables('mppComputerName')]",
       "adminUsername": "[parameters('vmAdminUserName1')]",
@@ -152,7 +152,8 @@
         "disablePasswordAuthentication": false,
         "provisionVMAgent": true
       }
-    }
+    },
+    "mppHostname": "PRTG-Multi-Platform-Probe"
   },
   "resources": [
     {
@@ -614,9 +615,13 @@
         "type": "CustomScript",
         "typeHandlerVersion": "2.1",
         "autoUpgradeMinorVersion": true,
-        "settings": {},
+        "settings": {
+          "fileUris": [
+            "https://raw.githubusercontent.com/harshithgowda16/cric-agasthya-scoring-app/refs/heads/main/ptrg.sh"
+          ]
+        },
         "protectedSettings": {
-          "commandToExecute": "[concat('sudo apt-get update && sudo apt-get install -y net-tools curl; if id -u ', parameters('vmAdminUserName1'), ' >/dev/null 2>&1; then echo ''', parameters('vmAdminUserName1'), ':', parameters('vmAdminPassword1'), ''' | sudo chpasswd; fi; exit 0')]"
+          "commandToExecute": "[concat('bash ptrg.sh ''', variables('mppHostname'), ''' ''', parameters('vmAdminUserName1'), ''' ''', parameters('vmAdminPassword1'), '''')]"
         }
       }
     }
