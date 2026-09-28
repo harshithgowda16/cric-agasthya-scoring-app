@@ -15,7 +15,7 @@
       "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/L2_prtg_mpp/versions/latest"
     },
     "mppImageOsState": {
-      "value": "Specialized"
+      "value": "Generalized"
     },
     "windiskSizeGB": {
       "value": "128"
