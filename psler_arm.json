@@ -56,7 +56,7 @@
     "vmAdminPassword2": {
       "type": "securestring",
       "metadata": {
-        "description": "Initial admin password for the Multi-Platform-Probe VM. Must meet Azure complexity rules (3 of: lower, upper, digit, special). The setup script then resets it to vmAdminPassword1."
+        "description": "Not used - kept only so existing parameter files do not fail."
       }
     },
     "trainerUserName": {
@@ -450,7 +450,7 @@
           ]
         },
         "protectedSettings": {
-          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/Lab3/psscript.ps1', variables('cloudlabsCommon'),variables('Enable-CloudLabsEmbeddedShadow'), ' -resetUserPassword ', parameters('resetUserPassword'))]"
+          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/win2025/generalized-vm/psscript.ps1', variables('cloudlabsCommon'),variables('Enable-CloudLabsEmbeddedShadow'), ' -resetUserPassword ', parameters('resetUserPassword'))]"
         }
       }
     },
@@ -550,7 +550,7 @@
         "osProfile": {
           "computerName": "[variables('mppComputerName')]",
           "adminUsername": "[parameters('vmAdminUserName1')]",
-          "adminPassword": "[parameters('vmAdminPassword2')]",
+          "adminPassword": "[parameters('vmAdminPassword')]",
           "linuxConfiguration": {
             "disablePasswordAuthentication": false,
             "provisionVMAgent": true
