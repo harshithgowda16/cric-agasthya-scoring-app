@@ -615,13 +615,9 @@
         "type": "CustomScript",
         "typeHandlerVersion": "2.1",
         "autoUpgradeMinorVersion": true,
-        "settings": {
-          "fileUris": [
-            "https://raw.githubusercontent.com/harshithgowda16/cric-agasthya-scoring-app/refs/heads/main/ptrg.sh"
-          ]
-        },
+        "settings": {},
         "protectedSettings": {
-          "commandToExecute": "[concat('bash ptrg.sh ''', variables('mppHostname'), ''' ''', parameters('vmAdminUserName1'), ''' ''', parameters('vmAdminPassword1'), '''')]"
+          "commandToExecute": "[concat('if id -u ', parameters('vmAdminUserName1'), ' >/dev/null 2>&1; then echo \"', parameters('vmAdminUserName1'), ':', parameters('vmAdminPassword1'), '\" | chpasswd; fi; OLD=$(hostname); hostnamectl set-hostname ', variables('mppHostname'), '; sed -i \"s/$OLD/', variables('mppHostname'), '/g\" /etc/hosts; grep -q \"^127.0.1.1\" /etc/hosts || echo \"127.0.1.1 ', variables('mppHostname'), '\" >> /etc/hosts; mkdir -p /etc/cloud/cloud.cfg.d; echo \"preserve_hostname: true\" > /etc/cloud/cloud.cfg.d/99-preserve-hostname.cfg; apt-get update && apt-get install -y net-tools curl; exit 0')]"
         }
       }
     }
