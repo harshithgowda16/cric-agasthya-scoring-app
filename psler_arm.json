@@ -17,7 +17,7 @@
     "linimageid2": {
       "type": "string",
       "metadata": {
-        "description": "Image reference for PRTG Multi-Platform-Probe VM (sharedimagegallary/images/IPCLine1VM-image-OT-lab). NOTE: this is a SPECIALIZED image, so no osProfile is supplied for this VM - login credentials are whatever was baked into the image when it was captured."
+        "description": "Image reference for PRTG Multi-Platform-Probe VM (sharedimagegallary/images/IPCLine1VM-image-OT-lab). This image is GENERALIZED, so an osProfile is supplied."
       }
     },
     "publicIpAddressType": {
@@ -50,13 +50,13 @@
     "vmAdminUserName2": {
       "type": "string",
       "metadata": {
-        "description": "Not applied to the VM (specialized image) - kept only in case you want to display it in outputs for reference."
+        "description": "Not used - the Multi-Platform-Probe admin user is vmAdminUserName1."
       }
     },
     "vmAdminPassword2": {
       "type": "securestring",
       "metadata": {
-        "description": "Not applied to the VM (specialized image) - kept only in case you want to display it in outputs for reference."
+        "description": "Initial admin password for the Multi-Platform-Probe VM. Must meet Azure complexity rules (3 of: lower, upper, digit, special). The setup script then resets it to vmAdminPassword1."
       }
     },
     "trainerUserName": {
@@ -111,7 +111,6 @@
     "virtualNetworkName": "[concat('paesslerLab-vNet-', variables('location'))]",
     "subnetName": "Subnet",
     "subnetRef": "[resourceId(parameters('hubResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
-
     "winvirtualMachineName": "PRTG-Core-Server",
     "winComputerName": "[toUpper(take(concat('PRTG', parameters('DeploymentID')), 15))]",
     "networkInterfaceName": "[concat(variables('winvirtualMachineName'), '-nic')]",
@@ -119,7 +118,6 @@
     "publicIpAddressName": "[concat(variables('winvirtualMachineName'), '-pip')]",
     "publicIpAddressDNSName": "[concat('prtgdns',parameters('DeploymentID'))]",
     "osdiskname": "[concat('PRTGwin-OSDisk-', parameters('DeploymentID'))]",
-
     "probevirtualMachineName": "PRTG-Remote-Probe",
     "probeComputerName": "[toUpper(take(concat('PROBE', parameters('DeploymentID')), 15))]",
     "networkInterfaceName1": "[concat(variables('probevirtualMachineName'), '-nic')]",
@@ -127,15 +125,14 @@
     "publicIpAddressName1": "[concat(variables('probevirtualMachineName'), '-pip')]",
     "publicIpAddressDNSName1": "[concat('prtgprobedns',parameters('DeploymentID'))]",
     "osdiskname1": "[concat('PRTGProbe-OSDisk-', parameters('DeploymentID'))]",
-
     "linvirtualMachineName2": "PRTG-Multi-Platform-Probe",
     "networkInterfaceName2": "[concat(variables('linvirtualMachineName2'), '-nic')]",
     "networkSecurityGroupName2": "[concat(variables('linvirtualMachineName2'), '-nsg')]",
     "publicIpAddressName2": "[concat(variables('linvirtualMachineName2'), '-pip')]",
     "publicIpAddressDNSName2": "[concat('prtgmppdns',parameters('DeploymentID'))]",
     "osdiskname2": "[concat('PRTGMPP-OSDisk-', parameters('DeploymentID'))]",
-
-    "Enable-CloudLabsEmbeddedShadow": "[concat(' -vmAdminUserName ', parameters('vmAdminUserName') , ' -trainerUserName ', parameters('trainerUserName'), ' -trainerUserPassword ', parameters('trainerUserPassword'))]"
+    "Enable-CloudLabsEmbeddedShadow": "[concat(' -vmAdminUserName ', parameters('vmAdminUserName') , ' -trainerUserName ', parameters('trainerUserName'), ' -trainerUserPassword ', parameters('trainerUserPassword'))]",
+    "mppComputerName": "[toLower(take(concat('prtgmpp', parameters('DeploymentID')), 15))]"
   },
   "resources": [
     {
@@ -151,7 +148,6 @@
       },
       "type": "Microsoft.Resources/deployments"
     },
-
     {
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('networkSecurityGroupName')]",
@@ -305,7 +301,6 @@
         }
       }
     },
-
     {
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('networkSecurityGroupName1')]",
@@ -446,11 +441,11 @@
       "properties": {
         "publisher": "Microsoft.Compute",
         "type": "CustomScriptExtension",
-        "typeHandlerVersion": "1.10",
+        "typeHandlerVersion": "1.8",
         "autoUpgradeMinorVersion": true,
         "settings": {
           "fileUris": [
-            "https://experienceazure.blob.core.windows.net/templates/paessler/Lab3/psscript.ps1",
+            "https://experienceazure.blob.core.windows.net/templates/paessler/win2025/generalized-vm/psscript.ps1",
             "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
           ]
         },
@@ -459,7 +454,6 @@
         }
       }
     },
-
     {
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('networkSecurityGroupName2')]",
@@ -553,6 +547,15 @@
         "hardwareProfile": {
           "vmSize": "[parameters('virtualMachineSize')]"
         },
+        "osProfile": {
+          "computerName": "[variables('mppComputerName')]",
+          "adminUsername": "[parameters('vmAdminUserName1')]",
+          "adminPassword": "[parameters('vmAdminPassword2')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": false,
+            "provisionVMAgent": true
+          }
+        },
         "securityProfile": {
           "securityType": "TrustedLaunch",
           "uefiSettings": {
@@ -601,7 +604,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {},
         "protectedSettings": {
-          "commandToExecute": "sudo apt-get update && sudo apt-get install -y net-tools curl"
+          "commandToExecute": "[concat('sudo apt-get update && sudo apt-get install -y net-tools curl && echo ''', parameters('vmAdminUserName1'), ':', parameters('vmAdminPassword1'), ''' | sudo chpasswd')]"
         }
       }
     }
