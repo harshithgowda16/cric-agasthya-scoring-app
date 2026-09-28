@@ -153,7 +153,7 @@
         "provisionVMAgent": true
       }
     },
-    "mppHostname": "PRTG-Multi-Platform-Probe"
+    "mppHostname": "prtg-mpp"
   },
   "resources": [
     {
