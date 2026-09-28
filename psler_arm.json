@@ -17,12 +17,12 @@
     "linimageid2": {
       "type": "string",
       "metadata": {
-        "description": "Image reference for PRTG Multi-Platform-Probe VM (sharedimagegallary/images/IPCLine1VM-image-OT-lab). Set mppImageOsState to match the image definition's OS state."
+        "description": "Image reference for PRTG Multi-Platform-Probe VM (sharedimagegallary/images/L2_prtg_mpp). Set mppImageOsState to match the image definition's OS state."
       }
     },
     "mppImageOsState": {
       "type": "string",
-      "defaultValue": "Specialized",
+      "defaultValue": "Generalized",
       "allowedValues": [
         "Specialized",
         "Generalized"
