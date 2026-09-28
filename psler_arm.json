@@ -17,7 +17,18 @@
     "linimageid2": {
       "type": "string",
       "metadata": {
-        "description": "Image reference for PRTG Multi-Platform-Probe VM (sharedimagegallary/images/IPCLine1VM-image-OT-lab). This image is GENERALIZED, so an osProfile is supplied."
+        "description": "Image reference for PRTG Multi-Platform-Probe VM (sharedimagegallary/images/IPCLine1VM-image-OT-lab). Set mppImageOsState to match the image definition's OS state."
+      }
+    },
+    "mppImageOsState": {
+      "type": "string",
+      "defaultValue": "Specialized",
+      "allowedValues": [
+        "Specialized",
+        "Generalized"
+      ],
+      "metadata": {
+        "description": "OS state of the linimageid2 image definition. Specialized = no osProfile is sent (login comes from the image). Generalized = osProfile is sent with vmAdminUserName1 / vmAdminPassword."
       }
     },
     "publicIpAddressType": {
@@ -132,7 +143,16 @@
     "publicIpAddressDNSName2": "[concat('prtgmppdns',parameters('DeploymentID'))]",
     "osdiskname2": "[concat('PRTGMPP-OSDisk-', parameters('DeploymentID'))]",
     "Enable-CloudLabsEmbeddedShadow": "[concat(' -vmAdminUserName ', parameters('vmAdminUserName') , ' -trainerUserName ', parameters('trainerUserName'), ' -trainerUserPassword ', parameters('trainerUserPassword'))]",
-    "mppComputerName": "[toLower(take(concat('prtgmpp', parameters('DeploymentID')), 15))]"
+    "mppComputerName": "[toLower(take(concat('prtgmpp', parameters('DeploymentID')), 15))]",
+    "mppOsProfile": {
+      "computerName": "[variables('mppComputerName')]",
+      "adminUsername": "[parameters('vmAdminUserName1')]",
+      "adminPassword": "[parameters('vmAdminPassword')]",
+      "linuxConfiguration": {
+        "disablePasswordAuthentication": false,
+        "provisionVMAgent": true
+      }
+    }
   },
   "resources": [
     {
@@ -547,15 +567,7 @@
         "hardwareProfile": {
           "vmSize": "[parameters('virtualMachineSize')]"
         },
-        "osProfile": {
-          "computerName": "[variables('mppComputerName')]",
-          "adminUsername": "[parameters('vmAdminUserName1')]",
-          "adminPassword": "[parameters('vmAdminPassword')]",
-          "linuxConfiguration": {
-            "disablePasswordAuthentication": false,
-            "provisionVMAgent": true
-          }
-        },
+        "osProfile": "[if(equals(parameters('mppImageOsState'), 'Generalized'), variables('mppOsProfile'), json('null'))]",
         "securityProfile": {
           "securityType": "TrustedLaunch",
           "uefiSettings": {
@@ -604,7 +616,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {},
         "protectedSettings": {
-          "commandToExecute": "[concat('sudo apt-get update && sudo apt-get install -y net-tools curl && echo ''', parameters('vmAdminUserName1'), ':', parameters('vmAdminPassword1'), ''' | sudo chpasswd')]"
+          "commandToExecute": "[concat('sudo apt-get update && sudo apt-get install -y net-tools curl; if id -u ', parameters('vmAdminUserName1'), ' >/dev/null 2>&1; then echo ''', parameters('vmAdminUserName1'), ':', parameters('vmAdminPassword1'), ''' | sudo chpasswd; fi; exit 0')]"
         }
       }
     }
