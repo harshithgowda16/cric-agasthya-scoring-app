@@ -418,11 +418,7 @@
         "osProfile": {
           "computerName": "[variables('probeComputerName')]",
           "adminUsername": "[parameters('vmAdminUserName')]",
-          "adminPassword": "[parameters('vmAdminPassword')]",
-          "windowsConfiguration": {
-            "provisionVMAgent": true,
-            "enableAutomaticUpdates": true
-          }
+          "adminPassword": "[parameters('vmAdminPassword')]"
         },
         "securityProfile": {
           "securityType": "TrustedLaunch",
