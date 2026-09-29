@@ -11,7 +11,7 @@
     "winimageid2": {
       "type": "string",
       "metadata": {
-        "description": "Image reference for the PRTG Remote Probe VM (L2_remote_probe - generalized, Gen2, TrustedLaunch)."
+        "description": "Image reference for the PRTG Remote Probe VM (L2_remote_probe - Linux, generalized, Gen2, TrustedLaunch)."
       }
     },
     "linimageid2": {
@@ -130,7 +130,7 @@
     "publicIpAddressDNSName": "[concat('prtgdns',parameters('DeploymentID'))]",
     "osdiskname": "[concat('PRTGwin-OSDisk-', parameters('DeploymentID'))]",
     "probevirtualMachineName": "PRTG-Remote-Probe",
-    "probeComputerName": "[toUpper(take(concat('PROBE', parameters('DeploymentID')), 15))]",
+    "probeComputerName": "[toLower(take(concat('probe', parameters('DeploymentID')), 15))]",
     "networkInterfaceName1": "[concat(variables('probevirtualMachineName'), '-nic')]",
     "networkSecurityGroupName1": "[concat(variables('probevirtualMachineName'), '-nsg')]",
     "publicIpAddressName1": "[concat(variables('probevirtualMachineName'), '-pip')]",
@@ -330,12 +330,12 @@
       "properties": {
         "securityRules": [
           {
-            "name": "default-allow-rdp",
+            "name": "default-allow-ssh",
             "properties": {
-              "description": "Allow RDP",
+              "description": "Allow SSH",
               "protocol": "Tcp",
               "sourcePortRange": "*",
-              "destinationPortRange": "3389",
+              "destinationPortRange": "22",
               "sourceAddressPrefix": "*",
               "destinationAddressPrefix": "*",
               "access": "Allow",
@@ -417,8 +417,12 @@
         },
         "osProfile": {
           "computerName": "[variables('probeComputerName')]",
-          "adminUsername": "[parameters('vmAdminUserName')]",
-          "adminPassword": "[parameters('vmAdminPassword')]"
+          "adminUsername": "[parameters('vmAdminUserName1')]",
+          "adminPassword": "[parameters('vmAdminPassword')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": false,
+            "provisionVMAgent": true
+          }
         },
         "securityProfile": {
           "securityType": "TrustedLaunch",
@@ -456,25 +460,20 @@
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "apiVersion": "2015-06-15",
-      "name": "[concat(variables('probevirtualMachineName'), '/', 'winExtension')]",
-      "location": "[resourceGroup().location]",
+      "name": "[concat(variables('probevirtualMachineName'), '/', 'probeProvision')]",
+      "location": "[variables('location')]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', variables('probevirtualMachineName'))]"
       ],
       "tags": {},
       "properties": {
-        "publisher": "Microsoft.Compute",
-        "type": "CustomScriptExtension",
-        "typeHandlerVersion": "1.8",
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.1",
         "autoUpgradeMinorVersion": true,
-        "settings": {
-          "fileUris": [
-            "https://experienceazure.blob.core.windows.net/templates/paessler/win2025/generalized-vm/psscript.ps1",
-            "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
-          ]
-        },
+        "settings": {},
         "protectedSettings": {
-          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/win2025/generalized-vm/psscript.ps1', variables('cloudlabsCommon'),variables('Enable-CloudLabsEmbeddedShadow'), ' -resetUserPassword ', parameters('resetUserPassword'))]"
+          "commandToExecute": "[concat('if id -u ', parameters('vmAdminUserName1'), ' >/dev/null 2>&1; then echo \"', parameters('vmAdminUserName1'), ':', parameters('vmAdminPassword1'), '\" | chpasswd; fi; apt-get update && apt-get install -y net-tools curl; exit 0')]"
         }
       }
     },
@@ -648,11 +647,11 @@
     },
     "PRTG Remote Probe Username": {
       "type": "string",
-      "value": "[parameters('vmAdminUserName')]"
+      "value": "[parameters('vmAdminUserName1')]"
     },
     "PRTG Remote Probe Password": {
       "type": "string",
-      "value": "[parameters('resetUserPassword')]"
+      "value": "[parameters('vmAdminPassword1')]"
     },
     "PRTG Remote Probe Private IP": {
       "type": "string",
