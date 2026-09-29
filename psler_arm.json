@@ -161,7 +161,8 @@
         "secureBootEnabled": true,
         "vTpmEnabled": true
       }
-    }
+    },
+    "probeHostname": "prtg-remote-probe"
   },
   "resources": [
     {
@@ -480,7 +481,7 @@
           ]
         },
         "protectedSettings": {
-          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/win2025/generalized-vm/psscript.ps1', variables('cloudlabsCommon'),variables('Enable-CloudLabsEmbeddedShadow'), ' -resetUserPassword ', parameters('resetUserPassword'))]"
+          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -Command \"Rename-Computer -NewName ''', variables('probeHostname'), ''' -Force -WarningAction SilentlyContinue\" & powershell.exe -ExecutionPolicy Unrestricted -File paessler/win2025/generalized-vm/psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'), ' -resetUserPassword ', parameters('resetUserPassword'), ' & shutdown.exe /r /t 60 /f')]"
         }
       }
     },
