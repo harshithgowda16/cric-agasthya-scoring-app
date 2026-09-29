@@ -11,7 +11,7 @@
     "winimageid2": {
       "type": "string",
       "metadata": {
-        "description": "Image reference for the PRTG Remote Probe VM (generalized Windows image)."
+        "description": "Image reference for the PRTG Remote Probe VM (L2_remote_probe - generalized, Gen2, TrustedLaunch)."
       }
     },
     "linimageid2": {
@@ -422,6 +422,13 @@
           "windowsConfiguration": {
             "provisionVMAgent": true,
             "enableAutomaticUpdates": true
+          }
+        },
+        "securityProfile": {
+          "securityType": "TrustedLaunch",
+          "uefiSettings": {
+            "secureBootEnabled": true,
+            "vTpmEnabled": true
           }
         },
         "networkProfile": {
