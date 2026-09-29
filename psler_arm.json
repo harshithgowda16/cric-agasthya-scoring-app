@@ -356,6 +356,20 @@
               "priority": 2000,
               "direction": "Inbound"
             }
+          },
+          {
+            "name": "default-allow-rdp",
+            "properties": {
+              "description": "Allow RDP",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3389",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 1100,
+              "direction": "Inbound"
+            }
           }
         ]
       }
