@@ -6,10 +6,10 @@
       "value": "Standard_D4as_v5"
     },
     "winimageid": {
-      "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/L2_prg_core_server/versions/latest"
+      "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourcegroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025-generalized/versions/Latest"
     },
     "winimageid2": {
-      "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/L2_remote_probe_windows/versions/latest"
+      "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourcegroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025-generalized/versions/Latest"
     },
     "linimageid2": {
       "value": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourceGroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/L2_prtg_mpp/versions/latest"
