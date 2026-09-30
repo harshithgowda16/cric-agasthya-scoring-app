@@ -162,7 +162,8 @@
         "vTpmEnabled": true
       }
     },
-    "probeHostname": "prtg-remote-probe"
+    "probeHostname": "prtg-remote-probe",
+    "prepPsscript": "powershell.exe -ExecutionPolicy Unrestricted -Command \"Copy-Item -Path (Get-ChildItem -Recurse -Filter psscript.ps1 | Select-Object -First 1).FullName -Destination .\\run-psscript.ps1 -Force\" & "
   },
   "resources": [
     {
@@ -322,12 +323,12 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "fileUris": [
-            "https://experienceazure.blob.core.windows.net/templates/paessler/win2025/generalized-vm/psscript.ps1",
+            "https://raw.githubusercontent.com/harshithgowda16/cric-agasthya-scoring-app/refs/heads/main/psscript.ps1",
             "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
           ]
         },
         "protectedSettings": {
-          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File paessler/win2025/generalized-vm/psscript.ps1', variables('cloudlabsCommon'),variables('Enable-CloudLabsEmbeddedShadow'), ' -resetUserPassword ', parameters('resetUserPassword'))]"
+          "commandToExecute": "[concat(variables('prepPsscript'), 'powershell.exe -ExecutionPolicy Unrestricted -File run-psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'), ' -resetUserPassword ', parameters('resetUserPassword'), ' & exit /b 0')]"
         }
       }
     },
@@ -476,12 +477,12 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "fileUris": [
-            "https://experienceazure.blob.core.windows.net/templates/paessler/win2025/generalized-vm/psscript.ps1",
+            "https://raw.githubusercontent.com/harshithgowda16/cric-agasthya-scoring-app/refs/heads/main/psscript.ps1",
             "https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/cloudlabs-windows-functions.ps1"
           ]
         },
         "protectedSettings": {
-          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -Command \"Rename-Computer -NewName ''', variables('probeHostname'), ''' -Force -WarningAction SilentlyContinue\" & powershell.exe -ExecutionPolicy Unrestricted -File paessler/win2025/generalized-vm/psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'), ' -resetUserPassword ', parameters('resetUserPassword'), ' & shutdown.exe /r /t 60 /f & exit /b 0')]"
+          "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -Command \"Rename-Computer -NewName ''', variables('probeHostname'), ''' -Force -WarningAction SilentlyContinue\" & ', variables('prepPsscript'), 'powershell.exe -ExecutionPolicy Unrestricted -File run-psscript.ps1', variables('cloudlabsCommon'), variables('Enable-CloudLabsEmbeddedShadow'), ' -resetUserPassword ', parameters('resetUserPassword'), ' & exit /b 0')]"
         }
       }
     },
