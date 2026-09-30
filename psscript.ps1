@@ -31,10 +31,7 @@ Param (
     $trainerUserPassword,
 
     [string]
-    $resetUserPassword,
-
-    [string]
-    $ComputerName
+    $resetUserPassword
 
 )
 
@@ -81,7 +78,7 @@ Remove-Item C:\temp\secpol.cfg, C:\temp\secedit.sdb, C:\temp\secedit.jfm -ErrorA
 # Remove the temp directory if it exists
 Remove-Item C:\temp -Recurse -Force -ErrorAction SilentlyContinue
 
-# Import Common Functions
+#Import Common Functions
 $path = pwd
 $path = $path.Path
 $commonscriptpath = "$path" + "\cloudlabs-common\cloudlabs-windows-functions.ps1"
@@ -96,111 +93,117 @@ DisableServerMgrNetworkPopup
 CreateLabFilesDirectory
 DisableWindowsFirewall
 
-InstallCloudLabsShadow $ODLID $InstallCloudLabsShadow
 
-Remove-Item -Path "C:\Users\Public\Desktop\Azure Portal.lnk" -ErrorAction SilentlyContinue
+# ============================================================
+# Hyper-V Manager Desktop Shortcut
+# ============================================================
+# Check whether Hyper-V is installed.
+# If Hyper-V is installed and Hyper-V Manager exists,
+# create a shortcut on the Public Desktop.
+# If Hyper-V is not installed, continue without any action.
+
+try {
+
+    $hyperVFeature = Get-WindowsFeature -Name Hyper-V -ErrorAction SilentlyContinue
+
+    if ($null -ne $hyperVFeature -and $hyperVFeature.InstallState -eq "Installed") {
+
+        $hyperVManagerPath = "$env:WINDIR\System32\virtmgmt.msc"
+        $publicDesktop = "$env:PUBLIC\Desktop"
+        $shortcutPath = "$publicDesktop\Hyper-V Manager.lnk"
+
+        if (Test-Path $hyperVManagerPath) {
+
+            $WshShell = New-Object -ComObject WScript.Shell
+            $Shortcut = $WshShell.CreateShortcut($shortcutPath)
+
+            $Shortcut.TargetPath = $hyperVManagerPath
+            $Shortcut.WorkingDirectory = "$env:WINDIR\System32"
+            $Shortcut.IconLocation = "$hyperVManagerPath,0"
+            $Shortcut.Description = "Hyper-V Manager"
+
+            $Shortcut.Save()
+
+            Write-Host "Hyper-V is installed. Hyper-V Manager shortcut created at: $shortcutPath"
+        }
+        else {
+            Write-Host "Hyper-V is installed, but Hyper-V Manager was not found. Skipping shortcut creation."
+        }
+    }
+    else {
+        Write-Host "Hyper-V is not installed. Skipping Hyper-V Manager shortcut creation."
+    }
+
+}
+catch {
+    Write-Warning "Unable to check/create Hyper-V Manager shortcut. Continuing deployment. Error: $($_.Exception.Message)"
+}
+
+
+Remove-Item -Path "C:\Users\Public\Desktop\Azure Portal.lnk"
 
 Function Enable-CloudLabsEmbeddedShadow($vmAdminUsername, $trainerUserName, $trainerUserPassword)
 {
-    Write-Host "Enabling CloudLabsEmbeddedShadow"
-    $trainerUserPass = $trainerUserPassword | ConvertTo-SecureString -AsPlainText -Force
+Write-Host "Enabling CloudLabsEmbeddedShadow"
+#Created Trainer Account and Add to Administrators Group
+$trainerUserPass = $trainerUserPassword | ConvertTo-SecureString -AsPlainText -Force
 
-    New-LocalUser -Name $trainerUserName -Password $trainerUserPass -FullName "$trainerUserName" -Description "CloudLabs EmbeddedShadow User" -PasswordNeverExpires
-    Add-LocalGroupMember -Group "Administrators" -Member "$trainerUserName"
+New-LocalUser -Name $trainerUserName -Password $trainerUserPass -FullName "$trainerUserName" -Description "CloudLabs EmbeddedShadow User" -PasswordNeverExpires
+Add-LocalGroupMember -Group "Administrators" -Member "$trainerUserName"
 
-    reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v Shadow /t REG_DWORD /d 2 -f
+#Add Windows regitary to enable Shadow
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v Shadow /t REG_DWORD /d 2 -f
 
-    $drivepath = "C:\Users\Public\Documents"
-    $WebClient = New-Object System.Net.WebClient
-    $WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/paessler/win2025/updated/shadow.ps1","$drivepath\Shadow.ps1")
-    $WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/shadow.xml","$drivepath\shadow.xml")
-    $WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/ShadowSession.zip","C:\Packages\ShadowSession.zip")
-    $WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/executetaskscheduler.ps1","$drivepath\executetaskscheduler.ps1")
-    $WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/shadowshortcut.ps1","$drivepath\shadowshortcut.ps1")
+#Download Shadow.ps1 and Shadow.xml file in VM
+$drivepath="C:\Users\Public\Documents"
+$WebClient = New-Object System.Net.WebClient
+$WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/paessler/win2025/updated/shadow.ps1","$drivepath\Shadow.ps1")
+$WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/shadow.xml","$drivepath\shadow.xml")
+$WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/ShadowSession.zip","C:\Packages\ShadowSession.zip")
+$WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/executetaskscheduler.ps1","$drivepath\executetaskscheduler.ps1")
+$WebClient.DownloadFile("https://experienceazure.blob.core.windows.net/templates/cloudlabs-common/shadowshortcut.ps1","$drivepath\shadowshortcut.ps1")
 
-    (Get-Content -Path "$drivepath\Shadow.ps1") | ForEach-Object {$_ -Replace "vmAdminUsernameValue", "$vmAdminUsername"} | Set-Content -Path "$drivepath\Shadow.ps1"
-    (Get-Content -Path "$drivepath\shadow.xml") | ForEach-Object {$_ -Replace "vmAdminUsernameValue", "$trainerUserName"} | Set-Content -Path "$drivepath\shadow.xml"
-    (Get-Content -Path "$drivepath\shadow.xml") | ForEach-Object {$_ -Replace "ComputerNameValue", "$($env:ComputerName)"} | Set-Content -Path "$drivepath\shadow.xml"
-    (Get-Content -Path "$drivepath\shadowshortcut.ps1") | ForEach-Object {$_ -Replace "vmAdminUsernameValue", "$trainerUserName"} | Set-Content -Path "$drivepath\shadowshortcut.ps1"
-    sleep 2
+# Unzip Shadow User Session Shortcut to Trainer Desktop
+#$trainerloginuser= "$trainerUserName" + "." + "$($env:ComputerName)"
+#Expand-Archive -LiteralPath 'C:\Packages\ShadowSession.zip' -DestinationPath "C:\Users\$trainerloginuser\Desktop" -Force
+#Expand-Archive -LiteralPath 'C:\Packages\ShadowSession.zip' -DestinationPath "C:\Users\$trainerUserName\Desktop" -Force
 
-    schtasks.exe /Create /XML $drivepath\shadow.xml /tn Shadowtask
+#Replace vmAdminUsernameValue with VM Admin UserName in script content 
+(Get-Content -Path "$drivepath\Shadow.ps1") | ForEach-Object {$_ -Replace "vmAdminUsernameValue", "$vmAdminUsername"} | Set-Content -Path "$drivepath\Shadow.ps1"
+(Get-Content -Path "$drivepath\shadow.xml") | ForEach-Object {$_ -Replace "vmAdminUsernameValue", "$trainerUserName"} | Set-Content -Path "$drivepath\shadow.xml"
+(Get-Content -Path "$drivepath\shadow.xml") | ForEach-Object {$_ -Replace "ComputerNameValue", "$($env:ComputerName)"} | Set-Content -Path "$drivepath\shadow.xml"
+(Get-Content -Path "$drivepath\shadowshortcut.ps1") | ForEach-Object {$_ -Replace "vmAdminUsernameValue", "$trainerUserName"} | Set-Content -Path "$drivepath\shadowshortcut.ps1"
+sleep 2
 
-    $Trigger = New-ScheduledTaskTrigger -AtLogOn
-    $User = "$($env:ComputerName)\$trainerUserName"
-    $Action = New-ScheduledTaskAction -Execute "C:\Windows\System32\WindowsPowerShell\v1.0\Powershell.exe" -Argument "-executionPolicy Unrestricted -File $drivepath\shadowshortcut.ps1 -WindowStyle Hidden"
-    Register-ScheduledTask -TaskName "shadowshortcut" -Trigger $Trigger -User $User -Action $Action -RunLevel Highest -Force
+# Scheduled Task to Run Shadow.ps1 AtLogOn
+schtasks.exe /Create /XML $drivepath\shadow.xml /tn Shadowtask
+
+$Trigger= New-ScheduledTaskTrigger -AtLogOn
+$User= "$($env:ComputerName)\$trainerUserName" 
+$Action= New-ScheduledTaskAction -Execute "C:\Windows\System32\WindowsPowerShell\v1.0\Powershell.exe" -Argument "-executionPolicy Unrestricted -File $drivepath\shadowshortcut.ps1 -WindowStyle Hidden"
+Register-ScheduledTask -TaskName "shadowshortcut" -Trigger $Trigger -User $User -Action $Action -RunLevel Highest -Force
 }
 
-# Disable the privacy consent screen during OOBE
+
+#Enable-CloudLabsEmbeddedShadow $vmAdminUsername $trainerUserName $trainerUserPassword
+
+# Disable the privacy consent screen during OOBE (first logon experience)
 New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\OOBE" -Force | Out-Null
 New-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\OOBE" -Name "DisablePrivacyExperience" -PropertyType DWord -Value 1 -Force
 
-# Set minimum diagnostic data level
+# Set minimum diagnostic data level (Security only)
 New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" -Force | Out-Null
 New-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" -Name "AllowTelemetry" -PropertyType DWord -Value 0 -Force
 
-# Set timezone
+
+#set timezone berline
 Set-TimeZone -Name "W. Europe Standard Time"
 
-# Keyboard layout scheduled task
+# Keyboard layout setup task (hidden window)
 $psCommand = 'PowerShell.exe -WindowStyle Hidden -ExecutionPolicy Bypass -Command "Set-WinUserLanguageList -LanguageList en-US, de-DE, fr-FR -Force"'
 $action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c start /min $psCommand"
 $trigger = New-ScheduledTaskTrigger -AtLogOn
 $principal = New-ScheduledTaskPrincipal -UserId "$env:COMPUTERNAME\$vmAdminUsername" -LogonType Interactive -RunLevel Highest
 Register-ScheduledTask -TaskName "SetKeyboardLanguages" -Action $action -Trigger $trigger -Principal $principal -Force
-
-# =============================================================================
-# PAESSLER CUSTOMIZATION
-# =============================================================================
-
-# 1. Rename Computer
-if ($ComputerName) {
-    Rename-Computer -NewName $ComputerName -Force -ErrorAction SilentlyContinue
-    Write-Host "Computer renamed to $ComputerName"
-}
-
-# 2. Create 'training' user using resetUserPassword passed from ARM and add to Administrators
-$trainingPassword = ConvertTo-SecureString $resetUserPassword -AsPlainText -Force
-if (-not (Get-LocalUser -Name "training" -ErrorAction SilentlyContinue)) {
-    New-LocalUser -Name "training" -Password $trainingPassword -FullName "training" -PasswordNeverExpires -ErrorAction SilentlyContinue
-    Write-Host "User 'training' created"
-} else {
-    Set-LocalUser -Name "training" -Password $trainingPassword -FullName "training"
-    Write-Host "User 'training' already exists - password and fullname updated"
-}
-Add-LocalGroupMember -Group "Administrators" -Member "training" -ErrorAction SilentlyContinue
-# 2a. Apply wallpaper system-wide via PersonalizationCSP (applies to all users including training)
-$wallpaperPath = "C:\Windows\Web\Wallpaper\Paessler\paessler-wallpaper.jpg"
-if (Test-Path $wallpaperPath) {
-    $regPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP"
-    New-Item -Path $regPath -Force | Out-Null
-    New-ItemProperty -Path $regPath -Name "DesktopImagePath"   -Value $wallpaperPath -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $regPath -Name "DesktopImageUrl"    -Value $wallpaperPath -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $regPath -Name "DesktopImageStatus" -Value 1 -PropertyType DWord -Force | Out-Null
-    Write-Host "Wallpaper set via PersonalizationCSP"
-} else {
-    Write-Host "WARNING: Wallpaper file not found at $wallpaperPath - skipping"
-}
-
-
-# 3. Delete 'labuser' only after training user is confirmed active
-$trainingExists = Get-LocalUser -Name "training" -ErrorAction SilentlyContinue
-$trainingInAdmins = Get-LocalGroupMember -Group "Administrators" -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*training*" }
-if ($trainingExists -and $trainingInAdmins) {
-    if (Get-LocalUser -Name "labuser" -ErrorAction SilentlyContinue) {
-        # Kill any active sessions for labuser before deleting
-        $labuserSessions = query session 2>$null | Select-String "labuser"
-        if ($labuserSessions) {
-            $sessionId = ($labuserSessions -split '\s+')[2]
-            logoff $sessionId /server:localhost 2>$null
-            Start-Sleep -Seconds 2
-        }
-        Remove-LocalUser -Name "labuser" -ErrorAction SilentlyContinue
-        Write-Host "User 'labuser' deleted"
-    }
-} else {
-    Write-Host "WARNING: training user not confirmed - skipping labuser deletion"
-}
 
 Restart-Computer -Force
