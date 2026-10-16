@@ -39,9 +39,9 @@
     },
     "vnetSubscriptionId": {
       "type": "string",
-      "defaultValue": "3ef9ec97-1a86-45d1-bc2a-7ccdd879020d",
+      "defaultValue": "[subscription().subscriptionId]",
       "metadata": {
-        "description": "Subscription ID that contains the existing VNet. Must be the same subscription the VM/NIC is deployed into."
+        "description": "Used only when createVnet is false. Must be the same subscription you deploy into."
       }
     },
     "vnetResourceGroup": {
@@ -50,6 +50,21 @@
       "metadata": {
         "description": "Resource group that contains the existing VNet."
       }
+    },
+    "createVnet": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "true = create a new VNet in this deployment's resource group (use for test subscriptions). false = use the existing VNet in vnetSubscriptionId/vnetResourceGroup."
+      }
+    },
+    "vnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/16"
+    },
+    "subnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/24"
     }
   },
   "variables": {
@@ -62,7 +77,7 @@
     "publicIpAddressDNSName": "[concat('labvm', uniqueString(resourceGroup().id))]",
     "publicIpAddressName": "[concat(variables('vmName'), '-pip')]",
     "subnetName": "Subnet",
-    "subnetRef": "[resourceId(parameters('vnetSubscriptionId'), parameters('vnetResourceGroup'), 'Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
+    "subnetRef": "[if(parameters('createVnet'), variables('newSubnetRef'), variables('existingSubnetRef'))]",
     "virtualMachineSize": "Standard_D4as_v5",
     "virtualNetworkName": "[concat('paesslerLab-vNet-', variables('location'))]",
     "vmName": "[concat('prtgcoreserver-',parameters('DeploymentID'))]",
@@ -71,9 +86,33 @@
     "diskType": "StandardSSD_LRS",
     "windiskSizeGB": 128,
     "computerName": "prtgcoreserver",
-    "winimageid": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourcegroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025-generalized/versions/Latest"
+    "winimageid": "/subscriptions/3ef9ec97-1a86-45d1-bc2a-7ccdd879020d/resourcegroups/cloudlabs-mgmt/providers/Microsoft.Compute/galleries/sharedimagegallary/images/win2025-generalized/versions/Latest",
+    "existingSubnetRef": "[resourceId(parameters('vnetSubscriptionId'), parameters('vnetResourceGroup'), 'Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
+    "newSubnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]"
   },
   "resources": [
+    {
+      "condition": "[parameters('createVnet')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2022-11-01",
+      "name": "[variables('virtualNetworkName')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('vnetAddressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('subnetName')]",
+            "properties": {
+              "addressPrefix": "[parameters('subnetAddressPrefix')]"
+            }
+          }
+        ]
+      }
+    },
     {
       "type": "Microsoft.Network/publicIpAddresses",
       "apiVersion": "2020-08-01",
@@ -214,7 +253,8 @@
       "location": "[variables('location')]",
       "dependsOn": [
         "[concat('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName'))]",
-        "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]"
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
       ],
       "properties": {
         "ipConfigurations": [
