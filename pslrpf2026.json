@@ -32,11 +32,8 @@
     "trainerUserPassword": {
       "value": "Password.!!1"
     },
-    "vnetResourceGroup": {
-      "value": "paessler-prod-vnet"
-    },
-    "createVnet": {
-      "value": true
+    "vnetSubscriptionId": {
+      "value": "3ef9ec97-1a86-45d1-bc2a-7ccdd879020d"
     }
   }
 }
